@@ -1,99 +1,3 @@
-
-const debug = (a,b,c,d) => {
-    
-    console.log(a,b,c,d)
-}
-
-const multipleElement = (regex,string,type,iteration,stop)=>{
-    const matches = string.matchAll(regex);
-    const myamp = {
-        type,
-        icons:[]
-    };
-    let elements = [];
-    
-    for (const match of matches) {
-        elements.push(match);    
-    }
-    console.log(elements);return;
-
-    if (elements.length < 2) return false;
-    
-    for (const match in elements) {
-        myamp.icons.push(ramsesII(elements[match][1],iteration+1))
-    }
-
-    //myamp.icons.push(ramsesII(match[1]));
-    if (myamp.icons.length > 0) return myamp;
-    return false;
-}
-
-const nestedElement = (regex,string,type,iteration,stop)=>{
-    const matches = string.matchAll(regex);
-    for (const match of matches) {
-        var f = ramsesII(match.groups.first);
-        var s = ramsesII(match.groups.second);
-        if (f.length == 1) f = f[0];
-        if (s.length == 1) s = s[0];
-
-        const myamp = {
-            type,
-            icons:[
-                f,
-                s
-            ]
-        }
-        const id = `REP${iteration}`;
-        const gliph = match.input.replace(match[0],id);
-        if (stop) return gliph;
-
-        const result = ramsesII(gliph,iteration+1);
-
-        let result_json = JSON.stringify(result);
-        debug('Result Json',result_json);
-
-        result_json = result_json.replace(`"${id}"`,JSON.stringify(myamp));
-        //result_json = result_json.replace(`${id}`,JSON.stringify(myamp));
-        debug('Replace Reference',result_json);
-        debug('To array',JSON.parse(result_json));
-
-        return JSON.parse(result_json);
-    }
-    return false;
-}
-
-const nestedElementSingle = (regex,string,type,iteration,stop)=>{
-    const matches = string.matchAll(regex);
-    for (const match of matches) {
-        debug('The mach',match[1]);
-        var f = ramsesII(match[1]);
-        if (f.length == 1) f = f[0];
-
-        const myamp = {
-            type,
-            icons:f
-        }
-        const id = `REP${iteration}`;
-        const gliph = match.input.replace(match[0],id);
-        if (stop) return gliph;
-
-        const result = ramsesII(gliph,iteration+1);
-
-        let result_json = JSON.stringify(result);
-        debug('Result Json',result_json);
-
-        result_json = result_json.replace(`"${id}"`,JSON.stringify(myamp));
-        //result_json = result_json.replace(`${id}`,JSON.stringify(myamp));
-        debug('Replace Reference',result_json);
-        debug('To array',JSON.parse(result_json));
-
-        return JSON.parse(result_json);
-    }
-    return false;
-}
-
-
-
 //      expr ::= mulexpr { addop mulexpr }
 //   1  addop ::= "+" | "-"
 //      mulexpr ::= powexpr { mulop powexpr }
@@ -102,8 +6,6 @@ const nestedElementSingle = (regex,string,type,iteration,stop)=>{
 //   4  atom ::= ident [ "(" expr ")" ] | numeric | "(" expr ")"
 //   5  numeric ::= /[0-9]+(\.[0-9]*)?([eE][\+\-]?[0-9]+)?/
 //   5  ident ::= /[A-Za-z_][A-Za-z_0-9]*/
-
-
 
 const tokenizer = (string) => {
     const tokenizeRegex = /[A-Za-z_][A-Za-z_0-9]*|\S/gi;
@@ -115,9 +17,10 @@ const tokenizer = (string) => {
     return elements;
 }
 
-const parseExpr = (tokens)=>{
+export const parseExpr = (tokens)=>{
     const symbol = parseSymbol(tokens);
-    console.log('First',symbol);
+    // console.log('Initial tokens',tokens);
+    // console.log('Is a symbol',symbol);
 
     if (!symbol) return false;
     
@@ -135,21 +38,19 @@ const parseExpr = (tokens)=>{
             console.log('next symbol is ',tokens[i],i);
             break;
         }
-        
-        console.log('Parse Symbol input',tokens.slice(i+1));
+
         let symb = parseSymbol(tokens.slice(i+1));
-        console.log('Symbol Return',symb);
-        if (!symb) return elements;        
+
+        if (!symb) return elements;  
+
         elements.push(symb.result);
-        
+
         if (symb.consumed > 1) {
-            i+=symb.consumed+1;
+            i+=symb.consumed;
         }
         else {
             i+=1;
         }
-        console.log(i,tokens);
-        console.log('elements',elements,symb.result);
     }
     return elements;
 }
@@ -183,29 +84,14 @@ const parseNonvertical = (tokens) => {
     if (!symbol) return false;
 
     let consumed = symbol.consumed;
-
-    //const elements = [symbol.result];
-    // for (var i=1; i<tokens.length; i=i+2) {
-    //     if (tokens[i] != '-') break;
-    //     consumed++;
-    //     let symb = nonVertical(tokens.slice(i+1));
-    //     if (!symb) break;
-    //     consumed+=symb.consumed;
-    //     elements.push(symb.result);
-    // }
-    // if (elements.length==1) return {consumed,result:elements[0]};
-    // console.log('Parsesub',consumed,elements);
-    //return {consumed,result:elements};
     return {consumed,result:symbol.result};
 }
 
 // vertical ::= expr { ":" expr}
 export const parseVertical = (tokens) => {
-    
     if (tokens.length < 3) return false;
     let consumed = 0;
     const expr = parseNonvertical(tokens);
-    console.log('Parse sub vertical',expr);
     if (!expr) return false;
 
     const vertical = {
@@ -222,7 +108,6 @@ export const parseVertical = (tokens) => {
         let expr = parseNonvertical(tokens.slice(i+1));
         if (!expr) {
             if (vertical.icons.length == 1) return {consumed,result:vertical.icons[0]};
-            //return vertical;
         }
         consumed+=expr.consumed;
         vertical.icons.push(expr.result);
@@ -258,23 +143,59 @@ export const parseNested = (tokens)=>{
 
 export const parseSubGroup = (tokens) => {
     if (tokens[0] != '(') return false;
-    if (!isIcon(tokens[1])) return false;
-    let consumed = 0;
-    const subgroup = [tokens[1]];
-    consumed++;
-    for(var i = 2; i<tokens.length; i++) {
-        if (tokens[i] != '-') break;
-        consumed++;
-        if (isIcon(tokens[i+1])) {
-            subgroup.push(tokens[i+1]);
-            i++;
+    let consumed = 1;
+    
+    const sub = [];
+    for (var i = consumed; i < tokens.length; i++) {
+        if (tokens[i] == ')') {
             consumed++;
+            break;
         }
+        sub.push(tokens[i]);
+        consumed++;
     }
-    if (tokens[i] != ')') return false;
-    consumed++;
-    return {consumed,result:subgroup};
+    return {consumed,result:parseExpr(sub)};
 }
+
+
+export const parseCartouche = (tokens) => {
+    let consumed = 0;
+    if (tokens[consumed] != '<') return false;
+    consumed++;
+
+    let start = 1;
+    if (tokens[consumed] == 'S' || tokens[consumed] == 'H') {
+        start++;
+        consumed++;
+    }
+
+    const cartouche = {
+        type:'cartouche',
+        icons:[]
+    };
+
+    //Get tokens until we find >
+    let sub_tokens = [];
+    for (var i = start; i < tokens.length; i++) {
+        if (tokens[i] == '>') {
+            if(tokens[i-1] != '-') return false;
+            consumed++;
+            break;
+        }
+        sub_tokens.push(tokens[i]);
+    }
+    if (sub_tokens[0]== '-' && sub_tokens[sub_tokens.length-1] == '-') {
+        consumed += sub_tokens.length;
+        sub_tokens = sub_tokens.slice(1,-1);
+    }
+    cartouche.icons = parseExpr(sub_tokens);    
+    const d = {
+        consumed,
+        result:cartouche
+    }
+    return d;
+}
+
 
 export const isIcon = (token) => {
     const operatorRegex = /(-|:|\&)/gi;
@@ -285,101 +206,13 @@ export const isIcon = (token) => {
 // nested ::= icon { "&" icon}
 // vertical ::= novert { ":" novertt}
 // horizontal ::= symbol {dash symbol}
+// cartouche ::= < horizontal >
 // symbol ::= subgroup | nested | vertical | icon
 // subgroup ::= "(" icon {"-" icon} ")"
 // novert ::= nested | subgroup |icon
 export const ramsesIII = (string,iteration=0) => {
-    
-    const operatorRegex = /(-|:)/gi;
     const tokens = tokenizer(string);
-
     const result = parseExpr(tokens);
-    console.log('Final',result);
+    //console.log('Final',result);
     return result;
-
-
-    return;
-    console.log(tokens);
-    let elements = [];
-    const operators = [];
-    let currentstring = string;
-    for (const token of tokens) {
-        
-        console.log(token);
-        if (!operatorRegex.test(token[0])) {
-            currentstring = currentstring.replace(token[0],'');
-            console.log(currentstring);
-            elements.push(token[0]);
-            continue;
-        }
-
-        if(token[0] === '-') {
-            currentstring = currentstring.replace(token[0],'');
-            console.log(currentstring);
-            return elements.concat(ramsesIII(currentstring,iteration+1));
-        }
-
-        if(token[0] === ':') {
-            currentstring = currentstring.replace(token[0],'');
-            console.log(currentstring);
-            return elements.concat(ramsesIII(currentstring,iteration+1));
-        }
-
-    }
-
-
-    return elements;
-
 }
-
-
-export const ramsesII = (string,iteration=0,stop=false) => {
-    debug('Initial',string);
-    const special = '(:|\\(|\\)|&|\-)';
-    const element = '[^\:\(\)\-]+'
-    const sub = `\\(${element}\\-${element}\\)`;
-    const subOrElement = `((${sub})|(${element}))`;
-    const vertical = `(?<first>${subOrElement}):(?<second>${subOrElement})`;
-    const amp = `(?<first>${element})\&(?<second>${element})`;
-    const vert2 = `(${element})(?:\:|$)`
-    console.log(vert2);
-    const cart = `<(?:S|H)?-([^>]*?)->`;
-
-    const cartReg = new RegExp(cart,'gi');
-    const ampReg = new RegExp(amp,'gi');
-    const verticalReg = new RegExp(vert2,'gi');
-
-    const specialReg = new RegExp(special,'ig');
-    const match_special = specialReg.test(string);
-    console.log('Has special',match_special);
-    if (match_special !== true) {
-        console.log('No Special return',string);
-        if (iteration == 0) return [string];
-        return string;
-    }
-
-    // const checkCart = nestedElementSingle(cartReg,string,'cartouche',iteration,stop);
-    // if (checkCart !== false) return checkCart;
-
-    // const checkamp = nestedElement(ampReg,string,'&',iteration,stop);
-    // if (checkamp !== false) return checkamp;
-
-    const checkvert = multipleElement(verticalReg,string,':',iteration,stop);
-    if (checkvert !== false) {
-        if (iteration == 0 && !Array.isArray(checkvert)) return [checkvert]
-        return checkvert;
-    }
-
-    const match_simple = new RegExp(`(${element})`,'gi');
-    const matches = string.matchAll(match_simple);
-    const results = [];
-    for(const match of matches) {
-        debug(match);
-        results.push(match[0])
-    }   
-    return results;
-}
-
-
-
-export default ramsesII;
