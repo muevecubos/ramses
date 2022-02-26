@@ -6,7 +6,7 @@
 //   4  atom ::= ident [ "(" expr ")" ] | numeric | "(" expr ")"
 //   5  numeric ::= /[0-9]+(\.[0-9]*)?([eE][\+\-]?[0-9]+)?/
 //   5  ident ::= /[A-Za-z_][A-Za-z_0-9]*/
-
+let order = 0;
 const tokenizer = (string) => {
     const tokenizeRegex = /[A-Za-z_][A-Za-z_0-9]*|\S/gi;
     const tokens = string.matchAll(tokenizeRegex);
@@ -19,9 +19,7 @@ const tokenizer = (string) => {
 
 export const parseExpr = (tokens)=>{
     const symbol = parseSymbol(tokens);
-    // console.log('Initial tokens',tokens);
-    // console.log('Is a symbol',symbol);
-
+    //console.log('Symbol parsed',symbol,tokens);
     if (!symbol) return false;
     
     let elements = [];
@@ -35,7 +33,12 @@ export const parseExpr = (tokens)=>{
 
     for (var i=symbol.consumed; i<tokens.length; i++) {
         if (tokens[i] != '-') {
-            console.log('next symbol is ',tokens[i],i);
+            //There are still tokens to be consumed but its not a -
+            //Recursive call and with replacement
+            let res = parseExpr(['REP',...tokens.slice(symbol.consumed)]);  
+            res[0].icons[0] = symbol.result;
+            elements = res;
+            return (elements);
             break;
         }
 
@@ -56,14 +59,16 @@ export const parseExpr = (tokens)=>{
 }
 
 const parseSymbol = (tokens)=>{
-    
     const subgroup = parseSubGroup(tokens);
+    //console.log('Is subgroup',subgroup,tokens);
     if (subgroup) return subgroup;
 
     const nested = parseNested(tokens);
+    //console.log('Is nested',nested,tokens);
     if (nested) return nested;
 
     const vertical = parseVertical(tokens);
+    //console.log('Is vertical',vertical,tokens);
     if (vertical) return vertical;
 
     if (isIcon(tokens[0])) return {consumed:1,result:tokens[0]};
@@ -92,6 +97,7 @@ export const parseVertical = (tokens) => {
     if (tokens.length < 3) return false;
     let consumed = 0;
     const expr = parseNonvertical(tokens);
+    
     if (!expr) return false;
 
     const vertical = {
@@ -101,15 +107,17 @@ export const parseVertical = (tokens) => {
         ]
     }
     consumed+=expr.consumed;
-
-    for (var i=1; i<tokens.length; i++) {
+    for (var i=consumed; i<tokens.length; i++) {
         if (tokens[i] != ':') break;
         consumed++;
         let expr = parseNonvertical(tokens.slice(i+1));
+        //console.log('Non vertical',expr);
         if (!expr) {
             if (vertical.icons.length == 1) return {consumed,result:vertical.icons[0]};
         }
         consumed+=expr.consumed;
+        i+=expr.consumed;
+        //if (Array.isArray(expr.result)) expr.result = expr.result[0];
         vertical.icons.push(expr.result);
         
     }
@@ -130,13 +138,14 @@ export const parseNested = (tokens)=>{
         ]
     }
 
-    for (var i=1; i< tokens.length; i+=2) {
+    for (var i=1; i <tokens.length; i++) {
         if (tokens[i] != '&') return false;
         consumed++;
-        const nextIcon = isIcon(tokens[i+1]);
+        i++;
+        const nextIcon = isIcon(tokens[i]);
         if (!nextIcon) return false;
         consumed++;
-        nested.icons.push(tokens[i+1]);
+        nested.icons.push(tokens[i]);
     }
     return {consumed,result:nested};
 }
