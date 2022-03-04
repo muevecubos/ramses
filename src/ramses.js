@@ -17,8 +17,9 @@ const tokenizer = (string) => {
     return elements;
 }
 
-export const parseExpr = (tokens)=>{
+export const parseExpr = (tokens,prev)=>{
     const symbol = parseSymbol(tokens);
+    //console.log(tokens,symbol);
     //console.log('Symbol parsed',symbol,tokens);
     if (!symbol) return false;
     
@@ -36,7 +37,15 @@ export const parseExpr = (tokens)=>{
             //There are still tokens to be consumed but its not a -
             //Recursive call and with replacement
             //console.log(['REP',...tokens.slice(symbol.consumed)]);
+            
+            // let res = parseExpr([tokens.slice(symbol.consumed)]); 
+            // if (res === false) return elements; 
+
+            // elements.push(res);
+
             let res = parseExpr(['REP',...tokens.slice(symbol.consumed)]);  
+            if (res === false) return elements;
+
             res[0].icons[0] = symbol.result;
             elements = res;
             return (elements);
@@ -59,9 +68,8 @@ export const parseExpr = (tokens)=>{
     return elements;
 }
 
-const parseSymbol = (tokens)=>{
+export const parseSymbol = (tokens)=>{
     const subgroup = parseSubGroup(tokens);
-    //console.log('Is subgroup',subgroup,tokens);
     if (subgroup) return subgroup;
 
     const nested = parseNested(tokens);
@@ -72,7 +80,9 @@ const parseSymbol = (tokens)=>{
     //console.log('Is vertical',vertical,tokens);
     if (vertical) return vertical;
 
-    if (isIcon(tokens[0])) return {consumed:1,result:tokens[0]};
+    if (isIcon(tokens[0]) && tokens.length == 1) return {consumed:1,result:tokens[0]};
+
+    return false;
 }
 
 const nonVertical = (tokens) => {

@@ -1,4 +1,4 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
@@ -40,10 +40,18 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it('Recognizes multiple verticals',()=>{
+    it('Recognizes multiple simple verticals',()=>{
         expect(ramsesIII('A:B:C:D')).toStrictEqual(
             [{type:':',icons:['A','B','C','D']}]
         )
+    })
+
+    it ('does not fail on invalid :',()=>{
+        expect(parseVertical(['A',':'])).toStrictEqual(false)
+    })
+
+    it ('does not fail on invalid :',()=>{
+        expect(parseSymbol(['A',':'])).toStrictEqual(false)
     })
 
     it('Recognizes multiple verticals',()=>{
@@ -55,6 +63,16 @@ describe('RamsesIII',()=>{
     it('Recognizes incomplete syntaxis missing :',()=>{
         expect(ramsesIII('A:C:D:')).toStrictEqual(
             [{type:':',icons:['A','C','D']}]
+        )
+    })
+
+    it('Ignores malformed expression',()=>{
+        expect(parseExpr([':'])).toStrictEqual(false)
+    })
+
+    it('Recognizes incomplete syntaxis missing :',()=>{
+        expect(ramsesIII('A:')).toStrictEqual(
+           false
         )
     })
 
@@ -71,7 +89,7 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it('Recognizes incomplete syntaxis t&w&(t-n:N5)',()=>{
+    it('Recognizes nested expression t&w&(t-n:N5)',()=>{
         expect(ramsesIII('t&w&(a-n:N5)')).toStrictEqual(
             [{icons:['t','w',['a',{icons:['n','N5'],type:':'}]],type:'&'}]
         )
