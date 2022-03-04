@@ -52,6 +52,37 @@ describe('RamsesIII',()=>{
         )
     })
 
+    it('Recognizes incomplete syntaxis missing :',()=>{
+        expect(ramsesIII('A:C:D:')).toStrictEqual(
+            [{type:':',icons:['A','C','D']}]
+        )
+    })
+
+    it('Recognizes incomplete syntaxis missing )',()=>{
+        expect(ramsesIII('(A-B')).toStrictEqual(
+            ['A','B']
+        )
+    })
+
+
+    it('Recognizes multiple nested with subgroup t&w&(t-a)',()=>{
+        expect(ramsesIII('t&w&(a-b)')).toStrictEqual(
+            [{icons:['t','w',['a','b']],type:'&'}]
+        )
+    })
+
+    it('Recognizes incomplete syntaxis t&w&(t-n:N5)',()=>{
+        expect(ramsesIII('t&w&(a-n:N5)')).toStrictEqual(
+            [{icons:['t','w',['a',{icons:['n','N5'],type:':'}]],type:'&'}]
+        )
+    })
+
+    it('Parses vertical allowing subgroups (A-B)&C',()=>{
+        expect(parseNested(['(','A','-','B',')','&','C'])).toStrictEqual(
+            {consumed:7,result:{icons:[['A','B'],'C'],type:'&'}}
+        )
+    })
+
     it('Recognizes a simple chain A-B-C-D',()=>{
         expect(ramsesIII('A-B-C-D')).toStrictEqual(
             ['A','B','C','D']
