@@ -53,6 +53,10 @@ describe('RamsesIII',()=>{
     it ('does not fail on invalid :',()=>{
         expect(parseSymbol(['A',':'])).toStrictEqual(false)
     })
+    
+    it('Parse Nested returns right elements if it is no nested',()=>{
+        expect(parseNested(['a','-','b'])).toStrictEqual(false)
+    })
 
     it('Recognizes multiple verticals',()=>{
         expect(ramsesIII('(A-B):C:D')).toStrictEqual(
@@ -66,14 +70,16 @@ describe('RamsesIII',()=>{
         )
     })
 
+    it('Recognizes incomplete syntaxis ::',()=>{
+        expect(ramsesIII('::')).toStrictEqual([])
+    })
+
     it('Ignores malformed expression',()=>{
         expect(parseExpr([':'])).toStrictEqual(false)
     })
 
     it('Recognizes incomplete syntaxis missing :',()=>{
-        expect(ramsesIII('A:')).toStrictEqual(
-           false
-        )
+        expect(ramsesIII('A:')).toStrictEqual([])
     })
 
     it('Recognizes incomplete syntaxis missing )',()=>{
@@ -81,7 +87,6 @@ describe('RamsesIII',()=>{
             ['A','B']
         )
     })
-
 
     it('Recognizes multiple nested with subgroup t&w&(t-a)',()=>{
         expect(ramsesIII('t&w&(a-b)')).toStrictEqual(
@@ -276,6 +281,28 @@ describe('RamsesIII',()=>{
                     ]
                 }
             ])
+    })
+
+
+    it('parses sA&ra-N1',()=>{
+        expect(ramsesIII('sA&ra-N1')).toStrictEqual([
+            {
+                type:'&',
+                icons:[
+                    'sA',
+                    'ra'
+                ]
+            },
+            'N1'
+        ])
+    })
+
+    it('parses incomplete s-',()=>{
+        expect(ramsesIII('s-')).toStrictEqual([])
+    })
+
+    it('parses incomplete <',()=>{
+        expect(ramsesIII('<')).toStrictEqual([])
     })
 
 })

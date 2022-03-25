@@ -31,6 +31,7 @@ export const parseExpr = (tokens,prev)=>{
     else {
         elements.push(symbol.result);
     }
+
     //console.log(symbol,tokens);
     for (var i=symbol.consumed; i<tokens.length; i++) {
         if (tokens[i] != '-') {
@@ -42,7 +43,6 @@ export const parseExpr = (tokens,prev)=>{
             // if (res === false) return elements; 
 
             // elements.push(res);
-
             let res = parseExpr(['REP',...tokens.slice(symbol.consumed)]);  
             if (res === false) return elements;
 
@@ -70,6 +70,7 @@ export const parseExpr = (tokens,prev)=>{
 
 export const parseSymbol = (tokens)=>{
     const subgroup = parseSubGroup(tokens);
+    //console.log('Subgroup',subgroup,tokens);
     if (subgroup) return subgroup;
 
     const nested = parseNested(tokens);
@@ -160,7 +161,6 @@ export const parseVertical = (tokens) => {
 export const parseNested = (tokens)=>{
     // const icon = isIcon(tokens[0]);
     // if (!icon) return false;
-
     if (tokens.length<3) return false;
     let consumed = 0;
 
@@ -177,10 +177,14 @@ export const parseNested = (tokens)=>{
     consumed += first.consumed;
     for (var i=first.consumed; i <tokens.length; i++) {
 
-        if (tokens[i] != '&') return false;
+        if (tokens[i] != '&') {
+            if (nested.icons.length < 2) return false;
+
+            return {consumed,result:nested};
+        }
         consumed++;
         i++;
-        
+        //console.log('now next',tokens.slice(i));
         let expr = parseNonNested(tokens.slice(i));
         //console.log('next no nest',expr);
         if (!expr) {
@@ -199,6 +203,7 @@ export const parseNested = (tokens)=>{
 }
 
 export const parseSubGroup = (tokens) => {
+    //console.log('parseSubGroup',tokens);
     if (tokens[0] != '(') return false;
     let consumed = 1;
     
@@ -242,6 +247,9 @@ export const parseCartouche = (tokens) => {
         }
         sub_tokens.push(tokens[i]);
     }
+
+    if (sub_tokens.length == 0) return false;
+
     if (sub_tokens[0]== '-' && sub_tokens[sub_tokens.length-1] == '-') {
         consumed += sub_tokens.length;
         sub_tokens = sub_tokens.slice(1,-1);
@@ -256,7 +264,7 @@ export const parseCartouche = (tokens) => {
 
 
 export const isIcon = (token) => {
-    const operatorRegex = /(-|:|\&)/gi;
+    const operatorRegex = /(-|:|\&|\<)/gi;
     return !operatorRegex.test(token)
 }
  
@@ -272,6 +280,7 @@ export const isIcon = (token) => {
 export const ramsesIII = (string,iteration=0) => {
     const tokens = tokenizer(string);
     const result = parseExpr(tokens);
+    if (result == false) return [];
     //console.log('Final',result);
     return result;
 }
