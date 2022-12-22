@@ -1,4 +1,4 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
@@ -207,7 +207,7 @@ describe('RamsesIII',()=>{
             {
                 consumed:8,
                 result:{
-                    type:'cartouche',
+                    type:'serekh',
                     icons:['A','B']}
         })
     })
@@ -217,7 +217,7 @@ describe('RamsesIII',()=>{
             {
                 consumed:8,
                 result:{
-                    type:'cartouche',
+                    type:'hwt',
                     icons:['A','B']}
         })
     })
@@ -269,13 +269,13 @@ describe('RamsesIII',()=>{
                         'mn',
                         'a',
                         'b',
-                        [{
+                        {
                             type:'&',
                             icons:[
                                 'n',
                                 'ra'
                             ]
-                        }],
+                        },
                         'c',
                         'd'
                     ]
@@ -303,6 +303,170 @@ describe('RamsesIII',()=>{
 
     it('parses incomplete <',()=>{
         expect(ramsesIII('<')).toStrictEqual([])
+    })
+
+    it('parses a vertical with subgroup E:(E-F&G)',()=>{
+        const result = ramsesIII('E:(E-F&G)');
+        expect (result).toStrictEqual([
+            {
+                type:":",
+                icons:[
+                    'E',
+                    [
+                        'E',
+                        {
+                            type:'&',
+                            icons:[
+                                'F','G'
+                            ]
+                        }
+                    ]
+                ]
+            }
+        ])
+    })
+
+    it('parses a vertical with subgroup A-<-B-C&D-E:(E-F&G)->-E:(E-F&G)',()=>{
+        const result = ramsesIII('A-<-B-C&D-E:(E-F&G)->-E:(E-F&G)');
+        expect (result).toStrictEqual([
+            'A',
+            {
+                type:'cartouche',
+                icons:[
+                    'B',
+                    {
+                        type:'&',
+                        icons:['C','D']
+                    },
+                    {
+                        type:":",
+                        icons:[
+                            'E',
+                            [
+                                'E',
+                                {
+                                    type:'&',
+                                    icons:[
+                                        'F','G'
+                                    ]
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            },
+            {
+                type:":",
+                icons:[
+                    "E",
+                    [
+                        'E',
+                        {
+                            type:'&',
+                            icons:['F','G']
+                        }
+                    ]
+                ]
+            }
+        ])
+    })
+
+    it('parses a vertical with subgroup A-<-B-C&D-E:(E-F&G)->-E:E-F&G',()=>{
+        const result = ramsesIII('A-<-B-C&D-E:(E-F&G)->-E:E-F&G');
+        expect (result).toStrictEqual([
+            'A',
+            {
+                type:'cartouche',
+                icons:[
+                    'B',
+                    {
+                        type:'&',
+                        icons:['C','D']
+                    },
+                    {
+                        type:":",
+                        icons:[
+                            'E',
+                            [
+                                'E',
+                                {
+                                    type:'&',
+                                    icons:['F','G']
+                                }
+                            ]
+                        ]
+                    },
+                    
+                    
+                ]
+            },
+            {
+                type:":",
+                icons:[
+                    "E",
+                    'E',    
+                ]
+            },
+            {
+                type:'&',
+                icons:['F','G']
+            }
+        ])
+    })
+    it('parses complex with * A-<-B*C&D*E:E*F&G->-E:E*F&G',()=>{
+        const result = ramsesIII('A-<-B*C&D*E:E*F&G->-E:E*F&G');
+        expect (result).toStrictEqual([
+            'A',
+            {
+                type:'cartouche',
+                icons:[
+                    'B',
+                    {
+                        type:'&',
+                        icons:['C','D']
+                    },
+                    {
+                        type:":",
+                        icons:[
+                            'E',
+                            'E',
+                        ]
+                    },
+                    {
+                        type:'&',
+                        icons:['F','G']
+                    }
+                ]
+            },
+            {
+                type:":",
+                icons:[
+                    "E",
+                    'E',    
+                ]
+            },
+            {
+                type:'&',
+                icons:['F','G']
+            }
+        ])
+    })
+
+    it('subgroup can be a expr A-(B:(C-D))',()=>{
+        const result = ramsesIII('A-(B:(C-D))');
+        expect (result).toStrictEqual([
+            'A',
+            {
+                type:':',
+                icons:[
+                    'B',
+                    [
+                        'C','D'
+                    ]
+                ]
+            },
+
+        ])
     })
 
 })
