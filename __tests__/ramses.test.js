@@ -1,30 +1,151 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
-    it('parses a nested group A&B',()=>{
-        expect(parseNested(['A','&','B'])).toStrictEqual(
-            {consumed:3,result:{type:'&',icons:['A','B']}}
-        )
+    it('parses incomplete s-',()=>{
+        expect(ramsesIII('s-')).toStrictEqual([])
     })
+
+    it('parses incomplete <',()=>{
+        expect(ramsesIII('<')).toStrictEqual([])
+    })
+
+    describe('Parse Nested',()=>{
+
+        it('parses a nested group A&B',()=>{
+            expect(parseNested(['A','&','B'])).toStrictEqual(
+                {consumed:3,result:{type:'&',icons:['A','B']}}
+            )
+        })
+   
+        it('parses multiple nested group A&BC',()=>{
+            expect(parseNested(['A','&','B','&','C'])).toStrictEqual(
+                {consumed:5,result:{type:'&',icons:['A','B','C']}}
+            )
+        })
+
+        it('Parse Nested returns right elements if it is no nested',()=>{
+            expect(parseNested(['a','-','b'])).toStrictEqual(false)
+        })
+
+        it('Parses vertical allowing subgroups (A-B)&C',()=>{
+            expect(parseNested(['(','A','-','B',')','&','C'])).toStrictEqual(
+                {consumed:7,result:{icons:[['A','B'],'C'],type:'&'}}
+            )
+        })
+
+        it('parses A&B-C',()=>{
+            expect(parseNested(['A','&','B','-','C'])).toStrictEqual({
+                consumed:3,
+                result:{
+                    type:'&',
+                    icons:[
+                        'A',
+                        'B'
+                    ]
+                }
+            })
+        })
+
+        it('parses a nested group A&&&B',()=>{
+            expect(parseNested(['A','&&&','B'])).toStrictEqual(
+                {consumed:3,result:{type:'&&&',icons:['A','B']}}
+            )
+        })
+        
+        it('parses a nested group A&&&(B:C)',()=>{
+            expect(parseNested(['A','&&&','(','B',':','C',')'])).toStrictEqual(
+                {consumed:7,result:{type:'&&&',icons:['A',{icons:['B','C'],type:':'}]}}
+            )
+        })
+        
+        it('parses a nested group A&&&(B&C)',()=>{
+            expect(parseNested(['A','&&&','(','B','&','C',')'])).toStrictEqual(
+                {consumed:7,result:{type:'&&&',icons:['A',{icons:['B','C'],type:'&'}]}}
+            )
+        })
     
-    it('parses multiple nested group A&BC',()=>{
-        expect(parseNested(['A','&','B','&','C'])).toStrictEqual(
-            {consumed:5,result:{type:'&',icons:['A','B','C']}}
-        )
     })
 
-    it('checks for an icon',()=>{
-        expect(isIcon('A')).toBe(true);
-    });
+    describe('IsIcon',()=>{
 
-    it('checks for an icon &',()=>{
-        expect(isIcon('&')).toBe(false);
-    });
+        it('checks for an icon',()=>{
+            expect(isIcon('A')).toBe(true);
+        });
+    
+        it('checks for an icon &',()=>{
+            expect(isIcon('&')).toBe(false);
+        });
+    })
+
+    describe('IsVertical',()=>{
+        it ('does not fail on invalid :',()=>{
+            expect(parseVertical(['A',':'])).toStrictEqual(false)
+        })
+    })
+
+    describe('ParseSubGroup',()=>{
+        it ('parse group identifies a simple group (t-p)',()=>{
+            expect(parseSubGroup(['(','t','-','p',')'])).toStrictEqual(
+                {consumed:5,result:[
+                "t","p"
+            ]})
+        })
+    
+        it ('parse group identifies a tripe group (t-z-p)',()=>{
+            expect(parseSubGroup(['(','t','-','z','-','p',')'])).toStrictEqual(
+                {consumed:7,result:["t","z","p"]}
+            )
+        })
+
+        it('parses a group (t-p&c)',()=>{
+            expect(parseSubGroup(['(','t','-','p','&','c',')'])).toStrictEqual({
+                consumed:7,
+                result:[
+                    't',
+                    {type:'&',icons:['p','c']}
+                ]
+            })
+        })
+
+        it ('inverted group (t-p)\\',()=>{
+            expect(parseSubGroup(['(','t','-','p',')','\\'])).toStrictEqual(
+                {
+                    consumed:6,
+                    result:{
+                        icons:[
+                            "t","p"
+                        ],
+                        type:'\\'
+                    }
+                })
+        })
+    })
+
+    describe('ConsumeSymbol',()=>{
+        it ('Returns a simple inverted',()=>{
+            expect (consumeIcon(['A','\\'])).toStrictEqual(
+                {consumed:2,result:{icons:['A'],type:'\\'}}
+            )
+        })
+
+        it ('Returns a simple inverted followed by more things',()=>{
+            expect (consumeIcon(['A','\\','-','B'])).toStrictEqual(
+                {consumed:2,result:{icons:['A'],type:'\\'}}
+            )
+        })
+    })
+
 
     it('Recognizes a simple symbol',()=>{
         expect(ramsesIII('A')).toStrictEqual(
             ['A']
+        )
+    })
+
+    it('Horizontal *',()=>{
+        expect(ramsesIII('A*B*C')).toStrictEqual(
+            ['A','B','C']
         )
     })
 
@@ -46,17 +167,13 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it ('does not fail on invalid :',()=>{
-        expect(parseVertical(['A',':'])).toStrictEqual(false)
-    })
+   
 
     it ('does not fail on invalid :',()=>{
         expect(parseSymbol(['A',':'])).toStrictEqual(false)
     })
     
-    it('Parse Nested returns right elements if it is no nested',()=>{
-        expect(parseNested(['a','-','b'])).toStrictEqual(false)
-    })
+   
 
     it('Recognizes multiple verticals',()=>{
         expect(ramsesIII('(A-B):C:D')).toStrictEqual(
@@ -100,12 +217,6 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it('Parses vertical allowing subgroups (A-B)&C',()=>{
-        expect(parseNested(['(','A','-','B',')','&','C'])).toStrictEqual(
-            {consumed:7,result:{icons:[['A','B'],'C'],type:'&'}}
-        )
-    })
-
     it('Recognizes a simple chain A-B-C-D',()=>{
         expect(ramsesIII('A-B-C-D')).toStrictEqual(
             ['A','B','C','D']
@@ -115,19 +226,6 @@ describe('RamsesIII',()=>{
     it('Recognizes a chain with vertical A-B:C',()=>{
         expect(ramsesIII('A-B:C')).toStrictEqual(
             ['A',{type:':',icons:['B','C']}]
-        )
-    })
-
-    it ('parse group identifies a simple group (t-p)',()=>{
-        expect(parseSubGroup(['(','t','-','p',')'])).toStrictEqual(
-            {consumed:5,result:[
-            "t","p"
-        ]})
-    })
-
-    it ('parse group identifies a tripe group (t-z-p)',()=>{
-        expect(parseSubGroup(['(','t','-','z','-','p',')'])).toStrictEqual(
-            {consumed:7,result:["t","z","p"]}
         )
     })
 
@@ -142,16 +240,6 @@ describe('RamsesIII',()=>{
                 't',
                 {type:'&',icons:['p','c']}
             ])
-    })
-
-    it('parses a group (t-p&c)',()=>{
-        expect(parseSubGroup(['(','t','-','p','&','c',')'])).toStrictEqual({
-            consumed:7,
-            result:[
-                't',
-                {type:'&',icons:['p','c']}
-            ]
-        })
     })
 
     it('parses a group with vertial i-mn:n-Htp-A1',()=>{
@@ -261,6 +349,7 @@ describe('RamsesIII',()=>{
                 }
             ])
     })
+
     it('parses mn:a:b:(n&ra):c:d',()=>{
         expect(ramsesIII('mn:a:b:(n&ra):c:d')).toStrictEqual([
                 {
@@ -297,13 +386,7 @@ describe('RamsesIII',()=>{
         ])
     })
 
-    it('parses incomplete s-',()=>{
-        expect(ramsesIII('s-')).toStrictEqual([])
-    })
-
-    it('parses incomplete <',()=>{
-        expect(ramsesIII('<')).toStrictEqual([])
-    })
+    
 
     it('parses a vertical with subgroup E:(E-F&G)',()=>{
         const result = ramsesIII('E:(E-F&G)');
@@ -413,6 +496,9 @@ describe('RamsesIII',()=>{
             }
         ])
     })
+
+
+    
     it('parses complex with * A-<-B*C&D*E:E*F&G->-E:E*F&G',()=>{
         const result = ramsesIII('A-<-B*C&D*E:E*F&G->-E:E*F&G');
         expect (result).toStrictEqual([
@@ -466,6 +552,162 @@ describe('RamsesIII',()=>{
                 ]
             },
 
+        ])
+    })
+
+
+    it ('Identifies subgrup correctly A:(B:C)',()=>{
+        const result = ramsesIII('A:(B:C)');
+        expect (result).toStrictEqual([{
+            type:':',
+            icons:[
+                'A',
+                {
+                    type:":",
+                    icons:[
+                        'B','C'
+                    ]
+                }
+            ]    
+         }])
+    })
+    
+    it ('Identifies subgrup correctly (A:B):C',()=>{
+        const result = ramsesIII('(A:B):C');
+        expect (result).toStrictEqual([{
+            type:':',
+            icons:[
+                {
+                    type:":",
+                    icons:[
+                        'A','B'
+                    ]
+                },
+                'C'
+            ]    
+         }])
+    })
+
+    it ('Identifies subgrup correctly (A&B):C',()=>{
+        const result = ramsesIII('(A&B):C');
+        expect (result).toStrictEqual([{
+            type:':',
+            icons:[
+                {
+                    type:"&",
+                    icons:[
+                        'A','B'
+                    ]
+                },
+                'C'
+            ]    
+         }])
+    })
+    
+    it ('Identifies subgrup correctly A:(B-C:D)',()=>{
+        const result = ramsesIII('A:(B-C:D)');
+        expect (result).toStrictEqual([{
+            type:':',
+            icons:[
+                'A',
+                [
+                    'B',
+                    {
+                        type:":",
+                        icons:[
+                            'C','D'
+                        ]
+                    },
+                ] 
+            ]    
+         }])
+    })
+    
+    it ('Identifies subgrup correctly A:(B-(C:D))',()=>{
+        const result = ramsesIII('A:(B-(C:D))');
+        expect (result).toStrictEqual([{
+            type:':',
+            icons:[
+                'A',
+                [
+                    'B',
+                    {
+                        type:":",
+                        icons:[
+                            'C','D'
+                        ]
+                    },
+                ] 
+            ]    
+         }])
+    })
+    
+    it ('Identifies subgrup correctly ((A:B)-C):D',()=>{
+        const result = ramsesIII('((A:B)-C):D');
+        //console.log(result);
+        expect (result).toStrictEqual([
+            {
+                type:':',
+                icons:[
+                    [
+                        {
+                            type:':',
+                            icons:['A','B']
+                        },
+                        'C'
+                    ],
+                    'D'
+                ]
+            }
+        ])
+    })
+
+    it ('Nested group with &&& A&&&B',()=>{
+        const result = ramsesIII('A&&&B');
+        expect (result).toStrictEqual([
+            {
+                type:'&',
+                icons:[
+                    'A',
+                    'B'
+                ]
+            }
+        ])
+    })
+
+    it ('Expression with inverted',()=>{
+        const result = ramsesIII('A-B-(C-D)\\');
+        expect (result).toStrictEqual([
+            'A','B',{
+                type:'\\',
+                icons:[
+                    'C','D'
+                ]
+            }
+        ])
+    })
+    
+    it ('Expression with inverted A\\-B',()=>{
+        const result = ramsesIII('A\\-B');
+        expect (result).toStrictEqual([
+            {
+                type:'\\',
+                icons:[
+                    'A'
+                ]
+            },
+            'B'
+        ])
+    })
+
+    it ('Expression with inverted (A-B)\\-C',()=>{
+        const result = ramsesIII('(A-B)\\-C');
+        expect (result).toStrictEqual([
+            {
+                type:'\\',
+                icons:['A','B']
+            },
+            'C'
         ])
     })
 
