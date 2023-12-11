@@ -9,6 +9,7 @@
 
 const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
+const horizontal_sep = [h_sep,h_sep_alt];
 const v_sep = ":";			// vertical group as in "A:B"
 const n_sep = "&";			// nested group as in "A&B"
 const nn_sep = "&&&";		// nested group as in "A&&&(B:C)"		// TO DO ("I10C" = "I10&&&(X1:N16)")
@@ -79,13 +80,78 @@ export const tokenizer = (string) => {
 	return elements;
 };
 
+export const parseHorizontal = (tokens) => {
+
+	const symbol = parseSymbol(tokens);
+
+	if (!symbol) return false;
+
+	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
+
+	const result = {
+		consumed:symbol.consumed,
+		icons: Array.isArray(symbol.result) ? symbol.result : to_result
+	}
+	//console.log('Parseh',result);
+	
+	for(var i = result.consumed; i < tokens.length; i++) {
+
+		if (!horizontal_sep.includes(tokens[i])) {
+
+			return result;
+			// let res = parseExpr(['REP', ...tokens.slice(symbol.consumed)]); 
+			// if(res === false) return elements;
+
+			// res[0].icons[0] = symbol.result;
+			// elements = res;
+			// return (elements);
+		}
+
+		let symb = parseSymbol(tokens.slice(i + 1));
+
+		if(!symb) return result;
+		result.consumed++;
+		//console.log('Symbol',symb,result);
+		result.icons.push(symb.result);
+		result.consumed += symb.consumed;
+		i += (symb.consumed > 1) ? symb.consumed : 1;
+	}
+	//console.log('here');
+	return result;
+
+}
+
+
 export const parseExpr = (tokens, prev) => {
 
-	// console.log('Call parse expre with',tokens)
+	const result = parseHorizontal(tokens);
+
+	if (result === false) return false;
+	
+	const remaining = tokens.slice(result.consumed);
+
+	if (remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
+
+	console.log('Result',result);
+	console.log('Remaining',remaining);
+
+	const remaining_res = parseHorizontal(['REP',...remaining]);
+	console.log('Will fill with',result.icons);
+	console.log('Remaingint_res',remaining_res.icons);
+
+	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
+	console.log('Replaced',remaining_res.icons);
+	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
+	
+	
+	return;
+
+	console.log('Call parse expre with',tokens)
 	
 	const symbol = parseSymbol(tokens);
 	
-	// console.log('Symbol',symbol);
+	console.log('Symbol',symbol);
+	
 	
 	if(!symbol) return false;
 	
@@ -98,7 +164,9 @@ export const parseExpr = (tokens, prev) => {
 	}
 	
 	for(var i = symbol.consumed; i < tokens.length; i++) {
-		if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
+		console.log('Next',tokens[i]);
+		if (!horizontal_sep.includes(tokens[i])) {
+		//if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
 			
 			//There are still tokens to be consumed but its not a -
 			//Recursive call and with replacement
@@ -118,24 +186,35 @@ export const parseExpr = (tokens, prev) => {
 		}
 
 		let symb = parseSymbol(tokens.slice(i + 1));
+		console.log('Parsing second',symb,tokens.slice(i + 1));
 		if(!symb) return elements;
 
 		elements.push(symb.result);
 
 		i += (symb.consumed > 1) ? symb.consumed : 1;
 	}
-
+	console.log('Final elements',elements);
 	return elements;
 };
 
 export const parseSymbol = (tokens) => {
-
+	//console.log(tokens,tokens.length);
+	
 	const cartouche = parseCartouche(tokens);
 	//console.log('Cartouche',cartouche,tokens);
 	if(cartouche) return cartouche;
 
+	const vertical = parseVertical(tokens);
+	//console.log('Is vertical',vertical,tokens);
+	if(vertical) return vertical;
+
 	const subgroup = parseSubGroup(tokens);
 	// console.log('Subgroup',subgroup,tokens);
+	// console.log('Tha tokens',tokens);
+	// if (tokens.length < 11 && tokens.length > 3){
+	// 	console.log('Subgroup',subgroup,tokens);
+	// 	return;
+	// }
 	if(subgroup) return subgroup;
 
 	const nested = parseNested(tokens);
@@ -143,9 +222,7 @@ export const parseSymbol = (tokens) => {
 	
 	if(nested) return nested;
 
-	const vertical = parseVertical(tokens);
-	//console.log('Is vertical',vertical,tokens);
-	if(vertical) return vertical;
+
 	
 	return consumeIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
@@ -288,7 +365,7 @@ export const parseNested = (tokens) => {
 	let must_match_separator = true;
 	
 	for(var i=first.consumed; i < tokens.length; i++) {
-
+		//console.log(tokens,must_match_separator,tokens[i]);
 		if (must_match_separator && !nested_separators.includes(tokens[i])) {
 			break;
 		}
@@ -395,16 +472,17 @@ export const parseSubGroup = (tokens) => {
 		}
 		sub.push(tokens[i]);
 	}
-	// console.log(sub);
+	//console.log('Sub',sub);
 	const sub_exp = parseExpr(sub);
-	
+	//console.log('Sub result',sub_exp);
 	const result = {
 		consumed,
 		result: (Array.isArray(sub_exp) && sub_exp.length == 1) ? sub_exp[0] : sub_exp ,
 	};
 
+	// console.log('Before inverted',result);
 	const inverted = isInverted(result.result,tokens[consumed]);
-
+	// console.log('Inverted',inverted);
 	if (inverted){
 		result.consumed++;
 		result.result = inverted;

@@ -1,6 +1,34 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal} from '../src/ramses';
 
 describe('RamsesIII',()=>{
+
+    describe('ParseHorizontal',()=>{
+
+        it ('parses simple horizontal A-B',()=>{
+            expect(parseHorizontal(['A','-','B'])).toStrictEqual(
+                {
+                    consumed:3,
+                    icons:['A','B']
+                }
+            )
+        });
+
+        it ('parses multiple horizontal A-B-C-D',()=>{
+            expect(parseHorizontal(['A','-','B','-','C','-','D'])).toStrictEqual(
+                {
+                    consumed:7,
+                    icons:['A','B','C','D']
+                }
+            )
+        })
+
+    })
+
+    it ('parses A-(B-C):D-E',()=>{
+        expect(ramsesIII('A-(B-C):D-E')).toStrictEqual([
+            'A',{icons:[['B','C'],'D'],type:':'},'E'
+        ])
+    })
 
     it('parses incomplete s-',()=>{
         expect(ramsesIII('s-')).toStrictEqual([])
@@ -143,8 +171,14 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it('Horizontal *',()=>{
-        expect(ramsesIII('A*B*C')).toStrictEqual(
+    it('Recognizes a simple symbol',()=>{
+        expect(ramsesIII('A')).toStrictEqual(
+            ['A']
+        )
+    })
+
+    it('Horizontal -',()=>{
+        expect(ramsesIII('A-B-C')).toStrictEqual(
             ['A','B','C']
         )
     })
@@ -181,29 +215,33 @@ describe('RamsesIII',()=>{
         )
     })
 
-    it('Recognizes incomplete syntaxis missing :',()=>{
-        expect(ramsesIII('A:C:D:')).toStrictEqual(
-            [{type:':',icons:['A','C','D']}]
-        )
+    describe('Incomplete Syntaxis',()=>{
+
+        it('Recognizes incomplete syntaxis missing :',()=>{
+            expect(ramsesIII('A:C:D:')).toStrictEqual(
+                [{type:':',icons:['A','C','D']}]
+            )
+        })
+    
+        it('Recognizes incomplete syntaxis ::',()=>{
+            expect(ramsesIII('::')).toStrictEqual([])
+        })
+    
+        it('Ignores malformed expression',()=>{
+            expect(parseExpr([':'])).toStrictEqual(false)
+        })
+    
+        it('Recognizes incomplete syntaxis missing :',()=>{
+            expect(ramsesIII('A:')).toStrictEqual([])
+        })
+    
+        it('Recognizes incomplete syntaxis missing )',()=>{
+            expect(ramsesIII('(A-B')).toStrictEqual(
+                ['A','B']
+            )
+        })
     })
 
-    it('Recognizes incomplete syntaxis ::',()=>{
-        expect(ramsesIII('::')).toStrictEqual([])
-    })
-
-    it('Ignores malformed expression',()=>{
-        expect(parseExpr([':'])).toStrictEqual(false)
-    })
-
-    it('Recognizes incomplete syntaxis missing :',()=>{
-        expect(ramsesIII('A:')).toStrictEqual([])
-    })
-
-    it('Recognizes incomplete syntaxis missing )',()=>{
-        expect(ramsesIII('(A-B')).toStrictEqual(
-            ['A','B']
-        )
-    })
 
     it('Recognizes multiple nested with subgroup t&w&(t-a)',()=>{
         expect(ramsesIII('t&w&(a-b)')).toStrictEqual(
@@ -644,7 +682,7 @@ describe('RamsesIII',()=>{
     
     it ('Identifies subgrup correctly ((A:B)-C):D',()=>{
         const result = ramsesIII('((A:B)-C):D');
-        //console.log(result);
+        //console.log(JSON.stringify(result));
         expect (result).toStrictEqual([
             {
                 type:':',
@@ -708,6 +746,28 @@ describe('RamsesIII',()=>{
                 icons:['A','B']
             },
             'C'
+        ])
+    })
+   
+    it ('Parses complex expression V30:U2 - Aa11:X1 - (S29-F35):D21 - G43',()=>{
+        const result = ramsesIII('V30:U2-Aa11:X1-(S29-F35):D21-G43');
+        expect (result).toStrictEqual([
+            {
+                type:':',
+                icons:['V30','U2']
+            },
+            {
+                type:':',
+                icons:['Aa11','X1']
+            },
+            {
+                type:':',
+                icons:[
+                    ['S29','F35'],
+                    'D21'
+                ]
+            },
+            'G43'
         ])
     })
 
