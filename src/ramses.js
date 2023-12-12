@@ -82,6 +82,37 @@ export const tokenizer = (string) => {
 	return elements;
 };
 
+export const parseHorizontalSep = (tokens) => {
+	if(tokens.length < 3) return false;
+	
+	const symbol = parseSymbol(tokens);
+	if(!symbol) return false;
+	
+	let consumed = symbol.consumed;
+	
+	const result = {
+		type:h_sep_alt,
+		icons:[
+			symbol.result,
+		],
+	};
+
+	for(var i = consumed; i < tokens.length; i++) {
+
+		if(tokens[i] != h_sep_alt) return false;
+
+		let symb = parseSymbol(tokens.slice(i + 1));
+
+		if(!symb) return false;
+		consumed++;		
+		result.icons.push(symb.result);
+		consumed += symb.consumed;
+		i += (symb.consumed > 1) ? symb.consumed : 1;
+	}
+	
+	return {consumed,result};
+}
+
 export const parseHorizontal = (tokens) => {
 	const symbol = parseSymbol(tokens);
 
@@ -556,11 +587,22 @@ export const consumeIcon = (tokens) => {
 
 const isInverted = (symbol, token) => {
 	if(token != inverted) return false;
+	if (Array.isArray(symbol) ) {
+		if (symbol.length == 1) {
+			return {
+				inverted:true,
+				icon:symbol[0]
+			}
+		}
 
-	return {
-		icons:symbol,
-		type:'\\',
+		return {
+			type:'h',
+			inverted:true,
+			icons:symbol
+		}
 	}
+
+	return {...symbol,inverted:true}
 }
 
 // A-<-B-C&D-E:(E-F&G)->-E:(E-F&G)

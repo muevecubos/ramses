@@ -1,6 +1,32 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep} from '../src/ramses';
 
 describe('RamsesIII',()=>{
+
+    describe('ParseAlternativeHorizontal',()=>{
+        it ('parsing alternative horizontal',()=>{
+            expect(parseHorizontalSep(['A','*','B'])).toStrictEqual(
+                {
+                    consumed:3,
+                    result:{
+                        icons:['A','B'],
+                        type:'*'
+                    }
+                }
+            )
+        })   
+
+        it ('parsing alternative horizontal',()=>{
+            expect(parseHorizontalSep(['A','*','B','*','C'])).toStrictEqual(
+                {
+                    consumed:5,
+                    result:{
+                        icons:['A','B','C'],
+                        type:'*'
+                    }
+                }
+            )
+        })   
+    })
 
     describe('ParseHorizontal',()=>{
 
@@ -141,10 +167,11 @@ describe('RamsesIII',()=>{
                 {
                     consumed:6,
                     result:{
+                        inverted:true,
                         icons:[
                             "t","p"
                         ],
-                        type:'\\'
+                        type:'h'
                     }
                 })
         })
@@ -153,13 +180,13 @@ describe('RamsesIII',()=>{
     describe('ConsumeSymbol',()=>{
         it ('Returns a simple inverted',()=>{
             expect (consumeIcon(['A','\\'])).toStrictEqual(
-                {consumed:2,result:{icons:['A'],type:'\\'}}
+                {consumed:2,result:{icon:'A',inverted:true}}
             )
         })
 
         it ('Returns a simple inverted followed by more things',()=>{
             expect (consumeIcon(['A','\\','-','B'])).toStrictEqual(
-                {consumed:2,result:{icons:['A'],type:'\\'}}
+                {consumed:2,result:{icon:'A',inverted:true}}
             )
         })
     })
@@ -717,7 +744,8 @@ describe('RamsesIII',()=>{
         const result = ramsesIII('A-B-(C-D)\\');
         expect (result).toStrictEqual([
             'A','B',{
-                type:'\\',
+                type:'h',
+                inverted:true,
                 icons:[
                     'C','D'
                 ]
@@ -729,10 +757,8 @@ describe('RamsesIII',()=>{
         const result = ramsesIII('A\\-B');
         expect (result).toStrictEqual([
             {
-                type:'\\',
-                icons:[
-                    'A'
-                ]
+                inverted:true,
+                icon:'A'
             },
             'B'
         ])
@@ -742,7 +768,20 @@ describe('RamsesIII',()=>{
         const result = ramsesIII('(A-B)\\-C');
         expect (result).toStrictEqual([
             {
-                type:'\\',
+                type:'h',
+                inverted:true,
+                icons:['A','B']
+            },
+            'C'
+        ])
+    })
+
+    it ('Expression with inverted (A:B)\\-C',()=>{
+        const result = ramsesIII('(A:B)\\-C');
+        expect (result).toStrictEqual([
+            {
+                type:':',
+                inverted:true,
                 icons:['A','B']
             },
             'C'
