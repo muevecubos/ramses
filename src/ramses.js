@@ -44,6 +44,8 @@ const  nested_separators = [n_sep,nn_sep];
 *  const ignored = "{sign}\i"			// marks the sign that goes with as ignored as in "A-B\i-C" will mark as ignored sign B
 *  const red = "{sign}\red"				// marks the sign that goes with as red as in "A-B\red-C" will paint only the sign B red
 *  const highlighted = "{sign}!"		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
+*  const sic = "{sign}§"				// marks the sign as "sic"
+*  const question = "{sign}~"			// marks the sign as "question"
 *  const determinative = "{sign}@"		// marks the sign that goes with as highlighted as in "A-B-C@" will paint only the sign C as a determinative
 // Replace the whole area dashers with custom token sign identifiers, as follows:
 // "//" => "Zz8"
@@ -71,7 +73,7 @@ const  nested_separators = [n_sep,nn_sep];
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\!|\@]?|\S/gi;
+	const tokenizeRegex = /[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -81,10 +83,9 @@ export const tokenizer = (string) => {
 };
 
 export const parseHorizontal = (tokens) => {
-
 	const symbol = parseSymbol(tokens);
 
-	if (!symbol) return false;
+	if(!symbol) return false;
 
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
 
@@ -95,9 +96,7 @@ export const parseHorizontal = (tokens) => {
 	//console.log('Parseh',result);
 	
 	for(var i = result.consumed; i < tokens.length; i++) {
-
-		if (!horizontal_sep.includes(tokens[i])) {
-
+		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
 			// let res = parseExpr(['REP', ...tokens.slice(symbol.consumed)]); 
 			// if(res === false) return elements;
@@ -118,19 +117,16 @@ export const parseHorizontal = (tokens) => {
 	}
 	//console.log('here');
 	return result;
-
 }
 
-
 export const parseExpr = (tokens, prev) => {
-
 	const result = parseHorizontal(tokens);
 
-	if (result === false) return false;
+	if(result === false) return false;
 	
 	const remaining = tokens.slice(result.consumed);
 
-	if (remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
+	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
 
 	console.log('Result',result);
 	console.log('Remaining',remaining);
@@ -165,7 +161,7 @@ export const parseExpr = (tokens, prev) => {
 	
 	for(var i = symbol.consumed; i < tokens.length; i++) {
 		console.log('Next',tokens[i]);
-		if (!horizontal_sep.includes(tokens[i])) {
+		if(!horizontal_sep.includes(tokens[i])) {
 		//if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
 			
 			//There are still tokens to be consumed but its not a -
@@ -173,7 +169,7 @@ export const parseExpr = (tokens, prev) => {
 			//console.log(['REP',...tokens.slice(symbol.consumed)]);
 			//console.log('enter??',tokens)
 			// let res = parseExpr([tokens.slice(symbol.consumed)]); 
-			// if (res === false) return elements; 
+			// if(res === false) return elements; 
 
 			// elements.push(res);
 			//console.log(['REP', ...tokens.slice(symbol.consumed)]);
@@ -211,7 +207,7 @@ export const parseSymbol = (tokens) => {
 	const subgroup = parseSubGroup(tokens);
 	// console.log('Subgroup',subgroup,tokens);
 	// console.log('Tha tokens',tokens);
-	// if (tokens.length < 11 && tokens.length > 3){
+	// if(tokens.length < 11 && tokens.length > 3){
 	// 	console.log('Subgroup',subgroup,tokens);
 	// 	return;
 	// }
@@ -222,8 +218,6 @@ export const parseSymbol = (tokens) => {
 	
 	if(nested) return nested;
 
-
-	
 	return consumeIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
 
@@ -243,7 +237,7 @@ const nonVertical = (tokens) => {
 
 	const result = consumeIcon(tokens);
 	
-	if (result) return result;
+	if(result) return result;
 
 	if(isIcon(tokens[0])) {
 		return {
@@ -260,7 +254,7 @@ const nonNested = (tokens) => {
 
 	const result = consumeIcon(tokens);
 
-	if (result) return result;
+	if(result) return result;
 
 	if(isIcon(tokens[0])) {
 		return {
@@ -329,7 +323,7 @@ export const parseVertical = (tokens) => {
 
 		consumed += expr.consumed;
 		i += expr.consumed;
-		//if (Array.isArray(expr.result)) expr.result = expr.result[0];
+		//if(Array.isArray(expr.result)) expr.result = expr.result[0];
 		vertical.icons.push(expr.result);
 	}
 	
@@ -364,15 +358,14 @@ export const parseNested = (tokens) => {
 	let next = null;
 	let must_match_separator = true;
 	
-	for(var i=first.consumed; i < tokens.length; i++) {
+	for(var i = first.consumed; i < tokens.length; i++) {
 		//console.log(tokens,must_match_separator,tokens[i]);
-		if (must_match_separator && !nested_separators.includes(tokens[i])) {
+		if(must_match_separator && !nested_separators.includes(tokens[i])) {
 			break;
 		}
 
 		if(nested_separators.includes(tokens[i])) {
-
-			if (next == null) {
+			if(next == null) {
 				next = tokens[i];
 				nested.type = next;
 			}
@@ -457,21 +450,20 @@ export const parseSubGroup = (tokens) => {
 	const sub = [];
 	let parity = 0;
 	for(var i = consumed; i < tokens.length; i++) {
-		if (tokens[i] == s_sep_i) parity++;
+		if(tokens[i] == s_sep_i) parity++;
 		if(tokens[i] == s_sep_e) {
 			consumed++;
-			if (parity == 0) {
+			if(parity == 0) {
 				break;
-			}
-			else {
+			} else {
 				parity--;
 			}
-		}
-		else {
+		} else {
 			consumed++;
 		}
 		sub.push(tokens[i]);
 	}
+
 	//console.log('Sub',sub);
 	const sub_exp = parseExpr(sub);
 	//console.log('Sub result',sub_exp);
@@ -481,9 +473,9 @@ export const parseSubGroup = (tokens) => {
 	};
 
 	// console.log('Before inverted',result);
-	const inverted = isInverted(result.result,tokens[consumed]);
+	const inverted = isInverted(result.result, tokens[consumed]);
 	// console.log('Inverted',inverted);
-	if (inverted){
+	if(inverted) {
 		result.consumed++;
 		result.result = inverted;
 	}
@@ -546,29 +538,28 @@ export const isIcon = (token) => {
 };
 
 export const consumeIcon = (tokens) => {
+	if(!isIcon(tokens[0])) return false;
 
-	if (!isIcon(tokens[0])) return false;
+	if(tokens.length == 1) return { consumed:1, result:tokens[0] };
 
-	if (tokens.length == 1) return { consumed:1, result:tokens[0] }
-
-	const inverted = isInverted([tokens[0]],tokens[1]);
-	if (inverted != false) {
-		return {consumed:2,result:inverted};
+	const inverted = isInverted([tokens[0]], tokens[1]);
+	if(inverted != false) {
+		return {
+			consumed:2,
+			result:inverted,
+		};
 	}
 
 	return false;
 	//return { consumed:1, result:tokens[0] };
 }
 
-
-
-const isInverted = (symbol,token) => {
-
-	if (token != inverted) return false;
+const isInverted = (symbol, token) => {
+	if(token != inverted) return false;
 
 	return {
 		icons:symbol,
-		type:'\\'
+		type:'\\',
 	}
 }
 
