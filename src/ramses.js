@@ -73,12 +73,13 @@ const  nested_separators = [n_sep,nn_sep];
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
 		elements.push(token[0]);
 	}
+
 	return elements;
 };
 

@@ -121,6 +121,15 @@ describe('RamsesIII',()=>{
     
     })
 
+
+    it('parses a nested group A&&&(B&C)',()=>{
+        expect(ramsesIII('A&&&(B&C)')).toStrictEqual([
+            {type:'&&&',icons:['A',{icons:['B','C'],type:'&'}]}
+        ])
+    })
+
+
+
     describe('IsIcon',()=>{
 
         it('checks for an icon',()=>{
@@ -731,7 +740,7 @@ describe('RamsesIII',()=>{
         const result = ramsesIII('A&&&B');
         expect (result).toStrictEqual([
             {
-                type:'&',
+                type:'&&&',
                 icons:[
                     'A',
                     'B'
