@@ -11,15 +11,16 @@ const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
 const horizontal_sep = [h_sep,h_sep_alt];
 const v_sep = ":";			// vertical group as in "A:B"
+const v_sep_alt = ".";		// vertical group as in "A.B"
 const n_sep = "&";			// nested group as in "A&B"
-const nn_sep = "&&&";		// nested group as in "A&&&(B:C)"		// TO DO ("I10C" = "I10&&&(X1:N16)")
+const nn_sep = "&&&";		// nested group as in "A&&&(B:C)"
 const nnn_sep = "^^^";		// nested group as in "A^^^B"			// TO DO ("D388A" = "F35^^^D28")
 const s_sep_i = "(";		// subgroup initial as in "A:(B-C)"
 const s_sep_e = ")";		// subgroup ending as in "A:(B-C)"
 const c_sep_i = "<";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / hwt initial as in "<H-A-B->"
 const c_sep_e = ">";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / hwt initial as in "<H-A-B->"
 const inverted = "\\";
-const  nested_separators = [n_sep,nn_sep];
+const nested_separators = [n_sep,nn_sep];
 
 /*
 // DASH MODIFIERS:
@@ -99,13 +100,12 @@ export const parseHorizontalSep = (tokens) => {
 	};
 
 	for(var i = consumed; i < tokens.length; i++) {
-
 		if(tokens[i] != h_sep_alt) return false;
 
 		let symb = parseSymbol(tokens.slice(i + 1));
 
 		if(!symb) return false;
-		consumed++;		
+		consumed++;
 		result.icons.push(symb.result);
 		consumed += symb.consumed;
 		i += (symb.consumed > 1) ? symb.consumed : 1;
@@ -160,25 +160,25 @@ export const parseExpr = (tokens, prev) => {
 
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
 
-	console.log('Result',result);
-	console.log('Remaining',remaining);
+	//console.log('Result',result);
+	//console.log('Remaining',remaining);
 
 	const remaining_res = parseHorizontal(['REP',...remaining]);
-	console.log('Will fill with',result.icons);
-	console.log('Remaingint_res',remaining_res.icons);
+	//console.log('Will fill with',result.icons);
+	//console.log('Remaingint_res',remaining_res.icons);
 
 	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
-	console.log('Replaced',remaining_res.icons);
+	//console.log('Replaced',remaining_res.icons);
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
 	
 	
 	return;
 
-	console.log('Call parse expre with',tokens)
+	//console.log('Call parse expre with',tokens)
 	
 	const symbol = parseSymbol(tokens);
 	
-	console.log('Symbol',symbol);
+	//console.log('Symbol',symbol);
 	
 	
 	if(!symbol) return false;
@@ -192,7 +192,7 @@ export const parseExpr = (tokens, prev) => {
 	}
 	
 	for(var i = symbol.consumed; i < tokens.length; i++) {
-		console.log('Next',tokens[i]);
+		//console.log('Next',tokens[i]);
 		if(!horizontal_sep.includes(tokens[i])) {
 		//if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
 			
@@ -214,14 +214,14 @@ export const parseExpr = (tokens, prev) => {
 		}
 
 		let symb = parseSymbol(tokens.slice(i + 1));
-		console.log('Parsing second',symb,tokens.slice(i + 1));
+		//console.log('Parsing second',symb,tokens.slice(i + 1));
 		if(!symb) return elements;
 
 		elements.push(symb.result);
 
 		i += (symb.consumed > 1) ? symb.consumed : 1;
 	}
-	console.log('Final elements',elements);
+	//console.log('Final elements',elements);
 	return elements;
 };
 
@@ -531,6 +531,10 @@ export const parseCartouche = (tokens) => {
 		type = 'hwt';
 		start++;
 		consumed++;
+	} else if(tokens[consumed] == 'F') {
+		type = 'enclosure';
+		start++;
+		consumed++;
 	}
 
 	const cartouche = {
@@ -610,8 +614,8 @@ const isInverted = (symbol, token) => {
 // A-<-B*C&D*E:E*F&G->-E:E*F&G
 
 // -
-// &
-// :
+// & / &&& / ^^^
+// : / .
 // ()
 // < / <S / <H
 //
