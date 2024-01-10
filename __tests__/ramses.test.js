@@ -231,13 +231,23 @@ describe('RamsesIII',()=>{
         )
     })
 
+    it('Recognizes a alternative vertical',()=>{
+        expect(ramsesIII('A;B')).toStrictEqual(
+            [{type:':',icons:['A','B']}]
+        )
+    })
+
     it('Recognizes multiple simple verticals',()=>{
         expect(ramsesIII('A:B:C:D')).toStrictEqual(
             [{type:':',icons:['A','B','C','D']}]
         )
     })
 
-   
+    it('Recognizes multiple simple alternative verticals',()=>{
+        expect(ramsesIII('A;B;C;D')).toStrictEqual(
+            [{type:':',icons:['A','B','C','D']}]
+        )
+    })
 
     it ('does not fail on invalid :',()=>{
         expect(parseSymbol(['A',':'])).toStrictEqual(false)

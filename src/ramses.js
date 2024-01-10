@@ -10,7 +10,9 @@
 const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
 const horizontal_sep = [h_sep,h_sep_alt];
+const v_sep_2 = ';';
 const v_sep = ":";			// vertical group as in "A:B"
+const vertical_sep= [v_sep,v_sep_2];
 const v_sep_alt = ".";		// vertical group as in "A.B"
 const n_sep = "&";			// nested group as in "A&B"
 const nn_sep = "&&&";		// nested group as in "A&&&(B:C)"
@@ -339,7 +341,7 @@ export const parseVertical = (tokens) => {
 	consumed += expr.consumed;
 
 	for(var i = consumed; i < tokens.length; i++) {
-		if(tokens[i] != v_sep) break;
+		if(!vertical_sep.includes(tokens[i])) break;
 		consumed++;
 		
 		let expr = parseNonvertical(tokens.slice(i + 1));
