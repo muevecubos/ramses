@@ -9,11 +9,11 @@
 
 const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
-const horizontal_sep = [h_sep,h_sep_alt];
-const v_sep_2 = ';';
+const dashed = "#";
+const horizontal_sep = [h_sep];
 const v_sep = ":";			// vertical group as in "A:B"
+const v_sep_2 = ";";		// fluid vertical group as in "A;B"
 const vertical_sep= [v_sep,v_sep_2];
-const v_sep_alt = ".";		// vertical group as in "A.B"
 const n_sep = "&";			// nested group as in "A&B"
 const nn_sep = "&&&";		// nested group as in "A&&&(B:C)"
 const nnn_sep = "^^^";		// nested group as in "A^^^B"			// TO DO ("D388A" = "F35^^^D28")
@@ -38,7 +38,7 @@ const nested_separators = [n_sep,nn_sep];
    const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
 // TRANSFORMATOR MODIFIERS (applying only to individual signs):
 *  const flip = "{sign}\"				// flips horizontally the sign that goes with as in "A-B\-C" will flip the sign B
-*  const rotate = "{sign}\R{degrees}"	// rotates the sign that goes with x degrees clockwise as in "A-B\R20-C" will rotate sign B 20Âº
+*  const rotate = "{sign}\R{degrees}"	// rotates the sign that goes with x degrees clockwise as in "A-B\R20-C" will rotate sign B 20º
 *  const scale = "{sign}\{scale}"		// scales the sign that goes with x percent as in "A-B\50-C" will make sign B at 50%
 // APPEARANCE MODIFIERS (applying only to individual signs):
 *  const dashed_a = "{sign}#{areas}";	// individual dashes the sign that goes with as in "A-B#23-C" will dash areas 2 and 3 of sign B
@@ -51,10 +51,10 @@ const nested_separators = [n_sep,nn_sep];
 *  const question = "{sign}~"			// marks the sign as "question"
 *  const determinative = "{sign}@"		// marks the sign that goes with as highlighted as in "A-B-C@" will paint only the sign C as a determinative
 // Replace the whole area dashers with custom token sign identifiers, as follows:
-// "//" => "Zz8"
-// "/"  => "Zz9"
-// "h/" => "Zz10"
-// "v/" => "Zz11"
+// "//" => "Zz4"
+// "/"  => "Zz4A"
+// "h/" => "Zz4B"
+// "v/" => "Zz4C"
 // In case of properties marked with "*" will be added into a "custom" object to the token as follows:
 // 		custom:{
 //			scale:##scale_value || null,
@@ -76,7 +76,7 @@ const nested_separators = [n_sep,nn_sep];
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -88,38 +88,56 @@ export const tokenizer = (string) => {
 
 export const parseHorizontalSep = (tokens) => {
 	if(tokens.length < 3) return false;
-	
-	const symbol = parseSymbol(tokens);
+
+	let consumed = 0;
+
+	const symbol = isIcon(tokens[consumed]) ? tokens[consumed] : false;
 	if(!symbol) return false;
-	
-	let consumed = symbol.consumed;
-	
+
+	consumed++;
 	const result = {
 		type:h_sep_alt,
 		icons:[
-			symbol.result,
+			symbol
 		],
 	};
+	let is_valid = false;
 
 	for(var i = consumed; i < tokens.length; i++) {
-		if(tokens[i] != h_sep_alt) return false;
+		if(tokens[i] != h_sep_alt) return is_valid ? {consumed,result} : false;
+		i++;
+		let symb = isIcon(tokens[i]) ? tokens[i] : false;
+		
 
-		let symb = parseSymbol(tokens.slice(i + 1));
-
-		if(!symb) return false;
 		consumed++;
-		result.icons.push(symb.result);
-		consumed += symb.consumed;
-		i += (symb.consumed > 1) ? symb.consumed : 1;
+		if(!symb) return is_valid ? {consumed,result} : false;;
+		result.icons.push(symb);
+		is_valid = result.icons.length>1;
+		consumed ++;
+
+		//i += (symb.consumed > 1) ? symb.consumed : 1;
 	}
-	
+
 	return {consumed,result};
 }
 
 export const parseHorizontal = (tokens) => {
+	// console.log('tokens h',tokens);
 	const symbol = parseSymbol(tokens);
 
 	if(!symbol) return false;
+
+	console.log(symbol);
+	let dashed = parseDashed(tokens.slice(symbol.consumed));
+	if (dashed) {
+		symbol.result = {
+			icons:symbol.result,
+			dashed:dashed.dashed
+		}
+	}
+	
+	console.log(dashed,symbol.result);
+
 
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
 
@@ -127,8 +145,8 @@ export const parseHorizontal = (tokens) => {
 		consumed:symbol.consumed,
 		icons: Array.isArray(symbol.result) ? symbol.result : to_result
 	}
-	//console.log('Parseh',result);
-	
+	// console.log('Parseh',result);
+
 	for(var i = result.consumed; i < tokens.length; i++) {
 		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
@@ -155,9 +173,9 @@ export const parseHorizontal = (tokens) => {
 
 export const parseExpr = (tokens, prev) => {
 	const result = parseHorizontal(tokens);
-
+	//console.log('result',result);
 	if(result === false) return false;
-	
+
 	const remaining = tokens.slice(result.consumed);
 
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
@@ -172,19 +190,19 @@ export const parseExpr = (tokens, prev) => {
 	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
 	//console.log('Replaced',remaining_res.icons);
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
-	
-	
+
+
 	return;
 
 	//console.log('Call parse expre with',tokens)
-	
+
 	const symbol = parseSymbol(tokens);
-	
+
 	//console.log('Symbol',symbol);
-	
-	
+
+
 	if(!symbol) return false;
-	
+
 	let elements = [];
 
 	if(symbol.consumed != undefined) {
@@ -192,12 +210,12 @@ export const parseExpr = (tokens, prev) => {
 	} else {
 		elements.push(symbol.result);
 	}
-	
+
 	for(var i = symbol.consumed; i < tokens.length; i++) {
 		//console.log('Next',tokens[i]);
 		if(!horizontal_sep.includes(tokens[i])) {
 		//if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
-			
+	
 			//There are still tokens to be consumed but its not a -
 			//Recursive call and with replacement
 			//console.log(['REP',...tokens.slice(symbol.consumed)]);
@@ -234,6 +252,9 @@ export const parseSymbol = (tokens) => {
 	//console.log('Cartouche',cartouche,tokens);
 	if(cartouche) return cartouche;
 
+	const h_group = parseHorizontalSep(tokens);
+	if(h_group) return h_group;
+
 	const vertical = parseVertical(tokens);
 	//console.log('Is vertical',vertical,tokens);
 	if(vertical) return vertical;
@@ -249,9 +270,8 @@ export const parseSymbol = (tokens) => {
 
 	const nested = parseNested(tokens);
 	//console.log('Is nested',nested,tokens);
-	
-	if(nested) return nested;
 
+	if(nested) return nested;
 	return consumeIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
 
@@ -270,7 +290,7 @@ const nonVertical = (tokens) => {
 	if(cartouche) return cartouche;
 
 	const result = consumeIcon(tokens);
-	
+
 	if(result) return result;
 
 	if(isIcon(tokens[0])) {
@@ -315,7 +335,7 @@ const parseNonNested = (tokens) => {
 	if(!symbol) return false;
 
 	let consumed = symbol.consumed;
-	
+
 	return {
 		consumed,
 		result:symbol.result,
@@ -328,7 +348,7 @@ export const parseVertical = (tokens) => {
 
 	let consumed = 0;
 	const expr = parseNonvertical(tokens);
-	
+
 	if(!expr) return false;
 
 	const vertical = {
@@ -343,9 +363,11 @@ export const parseVertical = (tokens) => {
 	for(var i = consumed; i < tokens.length; i++) {
 		if(!vertical_sep.includes(tokens[i])) break;
 		consumed++;
-		
+
+		vertical.type = tokens[i];	// totes les agrupacions verticals d'un mateix bloc han de ser iguals (o tots ":" o tots ";")
+
 		let expr = parseNonvertical(tokens.slice(i + 1));
-		
+
 		if(!expr && vertical.icons.length == 1) {
 			return {
 				consumed,
@@ -360,7 +382,7 @@ export const parseVertical = (tokens) => {
 		//if(Array.isArray(expr.result)) expr.result = expr.result[0];
 		vertical.icons.push(expr.result);
 	}
-	
+
 	if(vertical.icons.length == 1) {
 		return {
 			consumed,
@@ -379,7 +401,7 @@ export const parseNested = (tokens) => {
 	let consumed = 0;
 
 	const first = parseNonNested(tokens);
-	
+
 	const nested = {
 		type:n_sep,
 		icons:[
@@ -391,7 +413,7 @@ export const parseNested = (tokens) => {
 
 	let next = null;
 	let must_match_separator = true;
-	
+
 	for(var i = first.consumed; i < tokens.length; i++) {
 		//console.log(tokens,must_match_separator,tokens[i]);
 		if(must_match_separator && !nested_separators.includes(tokens[i])) {
@@ -410,16 +432,16 @@ export const parseNested = (tokens) => {
 				continue;
 			}
 		}
-		
+
 		let expr = parseNonNested(tokens.slice(i));
-		
+
 		if(!expr && nested.icons.length == 1) {
 			return {
 				consumed,
 				result:nested.icons[0],
 			};
 		}
-		
+
 		consumed += expr.consumed;
 		i += expr.consumed - 1;
 		nested.icons.push(expr.result);
@@ -434,7 +456,7 @@ export const parseNested = (tokens) => {
 	};
 
 	// for(var i=first.consumed; i < tokens.length; i++) {
-		
+
 	// 	if(tokens[i] != n_sep) {
 	// 		if(nested.icons.length < 2) return false;
 
@@ -570,8 +592,46 @@ export const parseCartouche = (tokens) => {
 	};
 };
 
+export const parseDashed = (tokens) => {
+	let consumed = 0;
+	//console.log(tokens);
+	if (tokens[consumed] != dashed) return false;
+
+	consumed++;
+	let dashresult = "";
+	let index = 1;
+	let is_valid = true;
+	let found = false;
+
+	for (var i = consumed; i<tokens.length; i++) {
+		//console.log('evaluating',tokens[i])
+		found = false;
+		for (var j = index; j < 5; j++) {
+			if (parseInt(tokens[i]) != j) continue;
+			index = j;
+			consumed++;
+			dashresult += ""+j;
+			found = true;
+		}
+		if (!found) {
+			is_valid = false;
+			break;
+		}
+
+	}
+	//console.log(dashresult)
+
+	if (is_valid) {
+		return {consumed,dashed:dashresult}
+	}
+
+	return false;
+	
+}
+
+
 export const isIcon = (token) => {
-	const operatorRegex = /(-|:|\&|\<)/gi;
+	const operatorRegex = /(-|:|\&|\<|\*)/gi;
 	return !operatorRegex.test(token);
 };
 
@@ -612,6 +672,7 @@ const isInverted = (symbol, token) => {
 	return {...symbol,inverted:true}
 }
 
+
 // A-<-B-C&D-E:(E-F&G)->-E:(E-F&G)
 // A-<-B*C&D*E:E*F&G->-E:E*F&G
 
@@ -627,7 +688,9 @@ const isInverted = (symbol, token) => {
 // vertical ::= novert { ":" novert}
 // horizontal ::= symbol {dash symbol}
 // cartouche ::= < horizontal >
-// symbol ::= cartouche | subgroup | nested | vertical | icon 
+// h_grouping ::= icon "*"" icon { "*" novert}
+// dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
+// symbol ::= cartouche | subgroup | h_grouping | nested | vertical | icon {"#"1234}
 // subgroup ::= "(" expr ")"
 // novert ::= nested | subgroup | cartouche |  | icon
 // nonest ::= subggroup | icon
