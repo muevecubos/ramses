@@ -127,7 +127,7 @@ export const parseHorizontal = (tokens) => {
 
 	if(!symbol) return false;
 
-	console.log(symbol);
+	// console.log(symbol);
 	let dashed = parseDashed(tokens.slice(symbol.consumed));
 	if (dashed) {
 		symbol.result = {
@@ -136,7 +136,7 @@ export const parseHorizontal = (tokens) => {
 		}
 	}
 	
-	console.log(dashed,symbol.result);
+	// console.log(dashed,symbol.result);
 
 
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
@@ -253,6 +253,7 @@ export const parseSymbol = (tokens) => {
 	if(cartouche) return cartouche;
 
 	const h_group = parseHorizontalSep(tokens);
+	
 	if(h_group) return h_group;
 
 	const vertical = parseVertical(tokens);
@@ -278,7 +279,7 @@ export const parseSymbol = (tokens) => {
 	//return false;
 };
 
-// novert ::= nested | subgroup | cartouche | icon
+// novert ::= horizontal_ nested | subgroup | cartouche | icon
 const nonVertical = (tokens) => {
 	const nested = parseNested(tokens);
 	if(nested) return nested;
@@ -302,6 +303,11 @@ const nonVertical = (tokens) => {
 };
 
 const nonNested = (tokens) => {
+
+	const h_group = parseHorizontalSep(tokens);
+	
+	if(h_group) return h_group;
+	
 	const subgroup = parseSubGroup(tokens);
 
 	if(subgroup) return subgroup;
@@ -692,8 +698,8 @@ const isInverted = (symbol, token) => {
 // dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
 // symbol ::= cartouche | subgroup | h_grouping | nested | vertical | icon {"#"1234}
 // subgroup ::= "(" expr ")"
-// novert ::= nested | subgroup | cartouche |  | icon
-// nonest ::= subggroup | icon
+// novert ::=  nested | subgroup | cartouche |  | icon
+// nonest ::= h_grouping | subggroup | icon
 export const ramsesIII = (string) => {
 	const result = parseExpr(tokenizer(string));
 	if(result == false) return [];
