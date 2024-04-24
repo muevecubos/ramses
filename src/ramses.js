@@ -121,48 +121,78 @@ export const parseHorizontalSep = (tokens) => {
 	return {consumed,result};
 }
 
-export const parseHorizontal = (tokens) => {
-	// console.log('tokens h',tokens);
-	const symbol = parseSymbol(tokens);
-
-	if(!symbol) return false;
-
-	// console.log(symbol);
-	let dashed = parseDashed(tokens.slice(symbol.consumed));
-	if (dashed) {
+const addDashedToSymbol = (symbol,tokens) => {
+	let dashed = parseDashed(tokens);
+	if (!dashed ) return symbol;
+	
+	if (typeof symbol.result != 'object') {
 		symbol.result = {
 			icons:symbol.result,
 			dashed:dashed.dashed
 		}
 	}
-	
-	// console.log(dashed,symbol.result);
-
-
-	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
-
-	const result = {
-		consumed:symbol.consumed,
-		icons: Array.isArray(symbol.result) ? symbol.result : to_result
+	else {
+		symbol.result.dashed = dashed.dashed
 	}
-	// console.log('Parseh',result);
+		
+	symbol.consumed+=dashed.consumed;
 
-	for(var i = result.consumed; i < tokens.length; i++) {
+}
+
+export const parseHorizontal = (tokens) => {
+	// console.log('tokens h',tokens);
+	const symbol = parseSymbol(tokens);
+	console.log('first symbol',symbol);
+	if(!symbol) return false;
+
+	const result = {}
+
+	addDashedToSymbol(symbol,tokens.slice(symbol.consumed));
+	console.log('after',symbol);
+	result.consumed = symbol.consumed;
+
+	// console.log(symbol);
+	// let dashed = parseDashed(tokens.slice(symbol.consumed));
+	// // console.log('dashed',dashed)
+	// if (dashed) {
+	// 	symbol.result = {
+	// 		icons:symbol.result,
+	// 		dashed:dashed.dashed
+	// 	}
+	// 	result.consumed+=dashed.consumed;
+	// }
+	
+	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
+	result.icons = Array.isArray(symbol.result) ? symbol.result : to_result
+	console.log('result icons',result.icons);
+	for(var i = symbol.consumed; i < tokens.length; i++) {
 		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
-			// let res = parseExpr(['REP', ...tokens.slice(symbol.consumed)]); 
-			// if(res === false) return elements;
-
-			// res[0].icons[0] = symbol.result;
-			// elements = res;
-			// return (elements);
 		}
 
 		let symb = parseSymbol(tokens.slice(i + 1));
-
+		console.log('Tha symb',symb)
 		if(!symb) return result;
-		result.consumed++;
-		//console.log('Symbol',symb,result);
+		//result.consumed++;
+
+		addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
+
+		result.consumed+= symb.consumed;
+
+		// dashed = parseDashed(tokens.slice(i+1+symb.consumed));
+		// if (dashed) {
+		// 	if (typeof symb.result != 'object') {
+		// 		symb.result = {
+		// 			icons:symb.result,
+		// 			dashed:dashed.dashed
+		// 		}
+		// 	}
+		// 	else {
+		// 		symb.result.dashed = dashed.dashed
+		// 	}
+		// 	result.consumed+=dashed.consumed;
+		// }
+
 		result.icons.push(symb.result);
 		result.consumed += symb.consumed;
 		i += (symb.consumed > 1) ? symb.consumed : 1;
@@ -173,7 +203,7 @@ export const parseHorizontal = (tokens) => {
 
 export const parseExpr = (tokens, prev) => {
 	const result = parseHorizontal(tokens);
-	//console.log('result',result);
+	console.log('result',result);
 	if(result === false) return false;
 
 	const remaining = tokens.slice(result.consumed);
@@ -600,23 +630,27 @@ export const parseCartouche = (tokens) => {
 
 export const parseDashed = (tokens) => {
 	let consumed = 0;
-	//console.log(tokens);
+	console.log('parseDashed',tokens);
 	if (tokens[consumed] != dashed) return false;
 
 	consumed++;
 	let dashresult = "";
 	let index = 1;
-	let is_valid = true;
+	let is_valid = false;
 	let found = false;
 
+	const numericReg = /[1-4]/i;
+
 	for (var i = consumed; i<tokens.length; i++) {
-		//console.log('evaluating',tokens[i])
+		// console.log('evaluating',tokens[i])
+		if (!numericReg.test(tokens[i])) break;
 		found = false;
 		for (var j = index; j < 5; j++) {
 			if (parseInt(tokens[i]) != j) continue;
 			index = j;
 			consumed++;
 			dashresult += ""+j;
+			is_valid = true;
 			found = true;
 		}
 		if (!found) {
@@ -694,7 +728,7 @@ const isInverted = (symbol, token) => {
 // vertical ::= novert { ":" novert}
 // horizontal ::= symbol {dash symbol}
 // cartouche ::= < horizontal >
-// h_grouping ::= icon "*"" icon { "*" novert}
+// h_grouping ::= icon "*" icon { "*" novert}
 // dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
 // symbol ::= cartouche | subgroup | h_grouping | nested | vertical | icon {"#"1234}
 // subgroup ::= "(" expr ")"
