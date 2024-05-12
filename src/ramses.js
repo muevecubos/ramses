@@ -76,7 +76,7 @@ const nested_separators = [n_sep,nn_sep];
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|[A-Za-z_\/\[\]][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -99,7 +99,7 @@ export const parseHorizontalSep = (tokens) => {
 	
 	consumed+= symbol.consumed;
 
-	console.log('Parsenested',symbol,tokens);
+	//console.log('Parsenested',symbol,tokens);
 
 	if(!symbol) return false;
 
@@ -143,8 +143,10 @@ export const parseHorizontalSep = (tokens) => {
 }
 
 const addDashedToSymbol = (symbol,tokens) => {
-	let dashed = parseDashed(tokens);
-	if (!dashed ) return symbol;
+	if (tokens.length == 0) return false;
+	let dashed = parseDashed(tokens[0]);
+	// if (!dashed ) return symbol;
+	if (!dashed ) return false;
 	
 	if (typeof symbol.result != 'object') {
 		symbol.result = {
@@ -157,63 +159,37 @@ const addDashedToSymbol = (symbol,tokens) => {
 	}
 		
 	symbol.consumed+=dashed.consumed;
-
+	return true;
 }
 
 export const parseHorizontal = (tokens) => {
-	// console.log('tokens h',tokens);
+	//console.log('parseHorizontal',tokens);
 	const symbol = parseSymbol(tokens);
-	console.log('first symbol',symbol);
+	//console.log('first symbol',symbol);
 	if(!symbol) return false;
 
 	const result = {}
 
-	addDashedToSymbol(symbol,tokens.slice(symbol.consumed));
-	console.log('after',symbol);
+	// addDashedToSymbol(symbol,tokens.slice(symbol.consumed));
+	// console.log('after',symbol);
 	result.consumed = symbol.consumed;
-
-	// console.log(symbol);
-	// let dashed = parseDashed(tokens.slice(symbol.consumed));
-	// // console.log('dashed',dashed)
-	// if (dashed) {
-	// 	symbol.result = {
-	// 		icons:symbol.result,
-	// 		dashed:dashed.dashed
-	// 	}
-	// 	result.consumed+=dashed.consumed;
-	// }
 	
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
 	result.icons = Array.isArray(symbol.result) ? symbol.result : to_result
-	console.log('result icons',result.icons);
+
 	for(var i = symbol.consumed; i < tokens.length; i++) {
+		//console.log('First token',tokens[i]);
 		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
 		}
 
 		let symb = parseSymbol(tokens.slice(i + 1));
-		console.log('Tha symb',symb)
+		//console.log('Tha symb',symb)
 		if(!symb) return result;
-		//result.consumed++;
 
-		addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
+		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
 
 		result.consumed+= symb.consumed;
-
-		// dashed = parseDashed(tokens.slice(i+1+symb.consumed));
-		// if (dashed) {
-		// 	if (typeof symb.result != 'object') {
-		// 		symb.result = {
-		// 			icons:symb.result,
-		// 			dashed:dashed.dashed
-		// 		}
-		// 	}
-		// 	else {
-		// 		symb.result.dashed = dashed.dashed
-		// 	}
-		// 	result.consumed+=dashed.consumed;
-		// }
-
 		result.icons.push(symb.result);
 		result.consumed += symb.consumed;
 		i += (symb.consumed > 1) ? symb.consumed : 1;
@@ -223,8 +199,9 @@ export const parseHorizontal = (tokens) => {
 }
 
 export const parseExpr = (tokens, prev) => {
+	console.log(tokens);
 	const result = parseHorizontal(tokens);
-	console.log('result',result);
+	//console.log('parseExpr result',result);
 	if(result === false) return false;
 
 	const remaining = tokens.slice(result.consumed);
@@ -305,7 +282,7 @@ export const parseSymbol = (tokens) => {
 
 	const h_group = parseHorizontalSep(tokens);
 
-	console.log('HGroup',h_group);
+	// console.log('HGroup',h_group);
 	
 	if(h_group) return h_group;
 
@@ -326,6 +303,7 @@ export const parseSymbol = (tokens) => {
 	//console.log('Is nested',nested,tokens);
 
 	if(nested) return nested;
+
 	return consumeIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
 
@@ -334,6 +312,10 @@ export const parseSymbol = (tokens) => {
 
 // novert ::= horizontal_ nested | subgroup | cartouche | icon
 const nonVertical = (tokens) => {
+
+	const horizontal = parseHorizontalSep(tokens);
+	if (horizontal) return horizontal;
+	
 	const nested = parseNested(tokens);
 	if(nested) return nested;
 
@@ -343,7 +325,9 @@ const nonVertical = (tokens) => {
 	const cartouche = parseCartouche(tokens);
 	if(cartouche) return cartouche;
 
+	//console.log('Going to consume icon',tokens);
 	const result = consumeIcon(tokens);
+	//console.log('Consumed ->',result);
 
 	if(result) return result;
 
@@ -434,7 +418,10 @@ export const parseVertical = (tokens) => {
 			};
 		}
 
-		if(expr.result == undefined) break;
+		if(expr.result == undefined) {
+			return false;			
+			break;
+		}
 
 		consumed += expr.consumed;
 		i += expr.consumed;
@@ -708,8 +695,16 @@ export const parseCartouche = (tokens) => {
 	};
 };
 
-export const parseDashed = (tokens) => {
+export const parseDashed = (token) => {
 	let consumed = 0;
+	// console.log("parseDashed",token);
+	const regex_tokens = token.matchAll(/[#1-4]/gi);
+	const tokens = [];
+	for(const token of regex_tokens) {
+		tokens.push(token[0]);
+	}
+	if (tokens.length == 0) return false;
+	// console.log(tokens,'test');
 	//console.log('parseDashed',tokens);
 	if (tokens[consumed] != dashed) return false;
 
@@ -742,7 +737,7 @@ export const parseDashed = (tokens) => {
 	//console.log(dashresult)
 
 	if (is_valid) {
-		return {consumed,dashed:dashresult}
+		return {consumed:1,dashed:dashresult}
 	}
 
 	return false;
@@ -756,10 +751,13 @@ export const isIcon = (token) => {
 };
 
 export const consumeIcon = (tokens) => {
+	// console.log('ConsumeIcon',tokens);
 	if(!isIcon(tokens[0])) return false;
 
-	if(tokens.length == 1) return { consumed:1, result:tokens[0] };
+	const result = {consumed:1,result:tokens[0]};
 
+	if(tokens.length == 1) return result;
+	
 	const inverted = isInverted([tokens[0]], tokens[1]);
 	if(inverted != false) {
 		return {
@@ -767,6 +765,15 @@ export const consumeIcon = (tokens) => {
 			result:inverted,
 		};
 	}
+	// console.log('Before dash',result);
+	const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
+	// console.log(dash_added);
+	if (dash_added) {
+		// console.log('Dash added',result);
+		return result
+	}
+	
+
 
 	return false;
 	//return { consumed:1, result:tokens[0] };
@@ -812,9 +819,10 @@ const isInverted = (symbol, token) => {
 // dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
 // symbol ::= cartouche | subgroup | h_grouping | nested | vertical | icon {"#"1234}
 // subgroup ::= "(" expr ")"
-// novert ::=  nested | subgroup | cartouche |  | icon
+// novert ::=  h_grouping | nested | subgroup | cartouche |  icon
 // nonest ::= subggroup | icon --- parseNested
 export const ramsesIII = (string) => {
+	console.log(string);
 	const result = parseExpr(tokenizer(string));
 	if(result == false) return [];
 	return result;

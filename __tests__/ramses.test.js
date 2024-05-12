@@ -2,6 +2,14 @@ import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical,
 
 describe('RamsesIII',()=>{
 
+    describe('Tokenizer tests',()=>{
+        it('tokenizes a only numeric symbol',()=>{
+            expect(tokenizer('17-A-B')).toStrictEqual(
+                ['17','-','A','-','B']
+            )
+        })
+    })
+
     describe('ParseAlternativeHorizontal',()=>{
         it ('parsing alternative horizontal',()=>{
             expect(parseHorizontalSep(['A','*','B'])).toStrictEqual(
@@ -252,8 +260,6 @@ describe('RamsesIII',()=>{
         expect(parseSymbol(['A',':'])).toStrictEqual(false)
     })
     
-   
-
     it('Recognizes multiple verticals',()=>{
         expect(ramsesIII('(A-B):C:D')).toStrictEqual(
             [{type:':',icons:[['A','B'],'C','D']}]
@@ -264,7 +270,7 @@ describe('RamsesIII',()=>{
 
         it('Recognizes incomplete syntaxis missing :',()=>{
             expect(ramsesIII('A:C:D:')).toStrictEqual(
-                [{type:':',icons:['A','C','D']}]
+                []
             )
         })
     
@@ -276,7 +282,7 @@ describe('RamsesIII',()=>{
             expect(parseExpr([':'])).toStrictEqual(false)
         })
     
-        it('Recognizes incomplete syntaxis missing :',()=>{
+        it('Recognizes incomplete syntaxis missing : with one symbol',()=>{
             expect(ramsesIII('A:')).toStrictEqual([])
         })
     
@@ -399,6 +405,14 @@ describe('RamsesIII',()=>{
             expect(ramsesIII('A-B*C')).toStrictEqual([
                 'A',
                 {type:'*',icons:['B','C']}
+            ])
+        })
+       
+       
+        it('parses M17-Y5D:N35:N5*Z1',()=>{
+            expect(ramsesIII('M17-Y5D:N35:N5*Z1')).toStrictEqual([
+                'M17',
+                {type:':',icons:['Y5D','N35',{type:'*',icons:['N5','Z1']}]}
             ])
         })
         
@@ -787,53 +801,68 @@ describe('RamsesIII',()=>{
         ])
     })
 
-    it ('Expression with inverted',()=>{
-        const result = ramsesIII('A-B-(C-D)\\');
-        expect (result).toStrictEqual([
-            'A','B',{
-                type:'h',
-                inverted:true,
-                icons:[
-                    'C','D'
-                ]
-            }
-        ])
-    })
+    describe('Inverted parsing',()=>{
+
+        it ('Expression with inverted',()=>{
+            const result = ramsesIII('A-B-(C-D)\\');
+            expect (result).toStrictEqual([
+                'A','B',{
+                    type:'h',
+                    inverted:true,
+                    icons:[
+                        'C','D'
+                    ]
+                }
+            ])
+        })
+        
+        it ('Expression with inverted A\\-B',()=>{
+            const result = ramsesIII('A\\-B');
+            expect (result).toStrictEqual([
+                {
+                    inverted:true,
+                    icon:'A'
+                },
+                'B'
+            ])
+        })
     
-    it ('Expression with inverted A\\-B',()=>{
-        const result = ramsesIII('A\\-B');
-        expect (result).toStrictEqual([
-            {
-                inverted:true,
-                icon:'A'
-            },
-            'B'
-        ])
+        it ('Expression with inverted (A-B)\\-C',()=>{
+            const result = ramsesIII('(A-B)\\-C');
+            expect (result).toStrictEqual([
+                {
+                    type:'h',
+                    inverted:true,
+                    icons:['A','B']
+                },
+                'C'
+            ])
+        })
+    
+        it ('Expression with inverted (A:B)\\-C',()=>{
+            const result = ramsesIII('(A:B)\\-C');
+            expect (result).toStrictEqual([
+                {
+                    type:':',
+                    inverted:true,
+                    icons:['A','B']
+                },
+                'C'
+            ])
+        })
+
+        it ('Expression with inverted A\ ',()=>{
+            const result = ramsesIII("A\\");
+            expect (result).toStrictEqual([
+                {    
+                    inverted:true,
+                    icon:"A"
+                },
+                
+            ])
+        })
     })
 
-    it ('Expression with inverted (A-B)\\-C',()=>{
-        const result = ramsesIII('(A-B)\\-C');
-        expect (result).toStrictEqual([
-            {
-                type:'h',
-                inverted:true,
-                icons:['A','B']
-            },
-            'C'
-        ])
-    })
-
-    it ('Expression with inverted (A:B)\\-C',()=>{
-        const result = ramsesIII('(A:B)\\-C');
-        expect (result).toStrictEqual([
-            {
-                type:':',
-                inverted:true,
-                icons:['A','B']
-            },
-            'C'
-        ])
-    })
    
     it ('Parses complex expression V30:U2 - Aa11:X1 - (S29-F35):D21 - G43',()=>{
         const result = ramsesIII('V30:U2-Aa11:X1-(S29-F35):D21-G43');
@@ -859,47 +888,47 @@ describe('RamsesIII',()=>{
 
     describe('Parse Dashing',()=>{
         it ('parses dashed icon #1',()=>{
-            expect(parseDashed(["#","1"])).toStrictEqual({
-                consumed:2,
+            expect(parseDashed("#1")).toStrictEqual({
+                consumed:1,
                 dashed:"1"
             });
         })
 
         it ('parses dashed icon #1234',()=>{
-            expect(parseDashed(["#","1","2","3","4"])).toStrictEqual({
-                consumed:5,
+            expect(parseDashed("#1234")).toStrictEqual({
+                consumed:1,
                 dashed:"1234"
             });
         })
 
         it ('parses dashed icon #34',()=>{
-            expect(parseDashed(["#","3","4"])).toStrictEqual({
-                consumed:3,
+            expect(parseDashed("#34")).toStrictEqual({
+                consumed:1,
                 dashed:"34"
             });
         })
 
         it ('skips dashed icon #32',()=>{
-            expect(parseDashed(["#","3","2"])).toStrictEqual(false);
+            expect(parseDashed("#32")).toStrictEqual(false);
         })
 
         it ('parses dashed icon #4',()=>{
-            expect(parseDashed(["#","4"])).toStrictEqual({
-                consumed:2,
+            expect(parseDashed("#4")).toStrictEqual({
+                consumed:1,
                 dashed:"4"
             });
         })
 
         it ('parses dashed icon #14',()=>{
-            expect(parseDashed(["#","1","4"])).toStrictEqual({
-                consumed:3,
+            expect(parseDashed("#14")).toStrictEqual({
+                consumed:1,
                 dashed:"14"
             });
         })
 
-        it('checks symbol',()=>{
-            expect(parseHorizontal(["A","#","1"])).toStrictEqual({
-                consumed:3,
+        it('checks symbol A#1',()=>{
+            expect(parseHorizontal(["A","#1"])).toStrictEqual({
+                consumed:2,
                 icons:[{
                     icons:'A',
                     dashed:'1'
@@ -907,7 +936,7 @@ describe('RamsesIII',()=>{
             });
         })
 
-        it('checks symbol',()=>{
+        it('checks multiple A#1-B#23',()=>{
             expect(ramsesIII("A#1-B#23")).toStrictEqual(
                 [{
                     icons:'A',
@@ -920,7 +949,7 @@ describe('RamsesIII',()=>{
         it('construct with : can be dashed',()=>{
             expect(ramsesIII("C-A:B#1")).toStrictEqual(
                 ["C",
-                {icons:['A','B'],type:':',dashed:'1'}]
+                {icons:['A',{icons:"B",dashed:'1'}],type:':'}]
             );
         })
     });
