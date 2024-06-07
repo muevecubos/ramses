@@ -86,22 +86,33 @@ export const tokenizer = (string) => {
 	return elements;
 };
 
+const groupable = (tokens) => {
+
+	const subgroup = parseSubGroup(tokens);
+	if(subgroup) return subgroup;
+
+	const nested  = parseNested(tokens);
+	if(nested) return nested;
+
+	const symbol = isIcon(tokens[0]) ? {result:tokens[0],consumed:1} : false;
+	return symbol;
+}
+
 export const parseHorizontalSep = (tokens) => {
 	if(tokens.length < 3) return false;
 
 	let consumed = 0;
 
-	let symbol = parseNested(tokens);
+	const symbol = groupable(tokens);
 
-	if (!symbol) {
-		symbol = isIcon(tokens[consumed]) ? {result:tokens[consumed],consumed:1} : false;
-	}
-	
-	consumed+= symbol.consumed;
+	// let symbol = parseNested(tokens);
 
-	//console.log('Parsenested',symbol,tokens);
+	// if (!symbol) {
+	// 	symbol = isIcon(tokens[consumed]) ? {result:tokens[consumed],consumed:1} : false;
+	// }
 
 	if(!symbol) return false;
+	consumed+= symbol.consumed;
 
 	
 	const result = {
@@ -116,26 +127,13 @@ export const parseHorizontalSep = (tokens) => {
 		if(tokens[i] != h_sep_alt) break; //return is_valid ? {consumed,result} : false;
 		i++;
 		consumed++;
-		// let symb = isIcon(tokens[i]) ? tokens[i] : false;
-		let symb = parseNested(tokens.slice(i));
+		
+		let symb = groupable(tokens.slice(i));
 
-		//console.log('first nest',symb);
-
-		if (!symb) {
-			symb = isIcon(tokens[i]) ? {result:tokens[i],consumed:1} : false;
-		}
-		//console.log('first symb',symb);
 		result.icons.push(symb.result);
 		consumed+= symb.consumed;
-		// consumed++;
 		if(!symb) return is_valid ? {consumed,result} : false;
-
-		//consumed+= result.consumed;
-		// result.icons.push(symb);
 		is_valid = result.icons.length>1;
-		// consumed ++;
-		//console.log(result);
-
 	}
 	if (!is_valid) return false;
 	//console.log('returnresult',{consumed,result})
@@ -199,7 +197,7 @@ export const parseHorizontal = (tokens) => {
 }
 
 export const parseExpr = (tokens, prev) => {
-	console.log(tokens);
+	//console.log(tokens);
 	const result = parseHorizontal(tokens);
 	//console.log('parseExpr result',result);
 	if(result === false) return false;
@@ -282,7 +280,7 @@ export const parseSymbol = (tokens) => {
 
 	const h_group = parseHorizontalSep(tokens);
 
-	// console.log('HGroup',h_group);
+	// console.log('HGroup',tokens,h_group);
 	
 	if(h_group) return h_group;
 
@@ -812,17 +810,18 @@ const isInverted = (symbol, token) => {
 
 // expr ::= symbol {"-" symbol}
 // nested ::= icon { "& | &&"  icon}
+// h_groupable ::= subgroup | nested
 // vertical ::= novert { ":" novert}
 // horizontal ::= symbol {dash symbol}
 // cartouche ::= < horizontal >
-// h_grouping ::= nested "*" nested { "*" nested}
+// h_grouping ::= h_groupable "*" h_groupable { "*" h_groupable}
 // dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
-// symbol ::= cartouche | subgroup | h_grouping | nested | vertical | icon {"#"1234}
+// symbol ::= cartouche | h_grouping  | subgroup | nested | vertical | icon {"#"1234}
 // subgroup ::= "(" expr ")"
 // novert ::=  h_grouping | nested | subgroup | cartouche |  icon
 // nonest ::= subggroup | icon --- parseNested
 export const ramsesIII = (string) => {
-	console.log(string);
+	//console.log(string);
 	const result = parseExpr(tokenizer(string));
 	if(result == false) return [];
 	return result;

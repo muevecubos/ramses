@@ -33,7 +33,24 @@ describe('RamsesIII',()=>{
                     }
                 }
             )
-        })   
+        })  
+        
+        it('parses complex expresion W19',()=>{
+
+            expect(parseHorizontalSep(['(','Q3',':','X1',')','*','V28'])).toStrictEqual(
+                {
+                    consumed:7,
+                    result:{
+                        icons:[
+                            {icons:['Q3','X1'],type:':'},
+                            'V28'
+                        ],
+                        type:'*'
+                    }
+                }
+            )
+            
+        })
     })
 
     describe('ParseHorizontal',()=>{
@@ -862,7 +879,28 @@ describe('RamsesIII',()=>{
             ])
         })
     })
-
+    
+    
+    it ('Parses * groups correctly W18-(Q3:X1)*V28-A1',()=>{
+        const result = ramsesIII('W19-(Q3:X1)*V28-A1');
+        expect (result).toStrictEqual([
+            "W19",
+            {
+                "type": "*",
+                "icons": [
+                    {
+                        "type": ":",
+                        "icons": [
+                            "Q3",
+                            "X1"
+                        ]
+                    },
+                    "V28"
+                ]
+            },
+            "A1"
+        ])
+    })
    
     it ('Parses complex expression V30:U2 - Aa11:X1 - (S29-F35):D21 - G43',()=>{
         const result = ramsesIII('V30:U2-Aa11:X1-(S29-F35):D21-G43');
