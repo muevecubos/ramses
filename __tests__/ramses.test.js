@@ -924,6 +924,82 @@ describe('RamsesIII',()=>{
         ])
     })
 
+    it ('Parses Bug 10 A:B-C*D:F:G',()=>{
+        const result = ramsesIII('A:B-C*D:F:G');
+        expect (result).toStrictEqual([
+            {
+              "type":":",
+              "icons":[
+                "A",
+                "B"
+              ]
+            }, {
+              "type":":",
+              "icons":[
+                {
+                  "type":"*",
+                  "icons":[
+                    "C",
+                    "D"
+                  ]
+                },
+                "F",
+                "G"
+              ]
+            }
+          ])
+    })
+    
+    it ('Parses Bug 11 A-B*C:D:E-F:G-H:I:J-K-L:M*N-O-P',()=>{
+        const result = ramsesIII('A-B*C:D:E-F:G-H:I:J-K-L:M*N-O-P');
+        expect (result).toStrictEqual([
+            "A",
+            {
+              "type":":",
+              "icons":[
+                {
+                  "type":"*",
+                  "icons":[
+                    "B",
+                    "C"
+                  ]
+                },
+                "D",
+                "E"
+              ]
+            }, {
+              "type":":",
+              "icons":[
+                "F",
+                "G"
+              ]
+            }, {
+              "type":":",
+              "icons":[
+                "H",
+                "I",
+                "J"
+              ]
+            },
+            "K",
+            {
+              "type":":",
+              "icons":[
+                "L",
+                {
+                  "type":"*",
+                  "icons":[
+                    "M",
+                    "N"
+                  ]
+                },
+              ]
+            },
+            "O",
+            "P"
+          ])
+    })
+
     describe('Parse Dashing',()=>{
         it ('parses dashed icon #1',()=>{
             expect(parseDashed("#1")).toStrictEqual({
