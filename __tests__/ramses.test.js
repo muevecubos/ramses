@@ -274,7 +274,7 @@ describe('RamsesIII',()=>{
     })
 
     it ('does not fail on invalid :',()=>{
-        expect(parseSymbol(['A',':'])).toStrictEqual(false)
+        expect(parseSymbol(['A',':'])).toStrictEqual({"consumed": 1, "result": "A"})
     })
     
     it('Recognizes multiple verticals',()=>{
@@ -287,7 +287,7 @@ describe('RamsesIII',()=>{
 
         it('Recognizes incomplete syntaxis missing :',()=>{
             expect(ramsesIII('A:C:D:')).toStrictEqual(
-                []
+                [{icons:['A','C','D'],type:':'}]
             )
         })
     
@@ -1061,11 +1061,24 @@ describe('RamsesIII',()=>{
         })
 
         it('construct with : can be dashed',()=>{
-            expect(ramsesIII("C-A:B#1")).toStrictEqual(
-                ["C",
-                {icons:['A',{icons:["B"],dashed:'1'}],type:':'}]
+            expect(ramsesIII("A:B#1")).toStrictEqual(
+                [{icons:['A','B'],type:':',dashed:'1'}]
             );
         })
+
+        it('construct with : can be dashed',()=>{
+            expect(ramsesIII("A:B#1")).toStrictEqual(
+                [{icons:['A','B'],type:':',dashed:'1'}]
+            );
+        })
+
+        it('construct complex with & can be dashed',()=>{
+            expect(ramsesIII("C&B#1")).toStrictEqual(
+                [{icons:['C','B'],dashed:'1',type:'&'}]
+            );
+        })
+
+        
     });
 })
 

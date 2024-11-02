@@ -140,7 +140,6 @@ export const parseHorizontalSep = (tokens) => {
 const addDashedToSymbol = (symbol,tokens) => {
 	if (tokens.length == 0) return false;
 	let dashed = parseDashed(tokens[0]);
-	// if (!dashed ) return symbol;
 	if (!dashed ) return false;
 	
 	if (typeof symbol.result != 'object') {
@@ -171,15 +170,16 @@ export const parseHorizontal = (tokens) => {
 	
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
 	result.icons = Array.isArray(symbol.result) ? symbol.result : to_result
-
+	
 	for(var i = symbol.consumed; i < tokens.length; i++) {
 		//console.log('First token',tokens[i]);
 		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
 		}
-
+		const remaining = tokens.slice(i + 1);
+		if (remaining.length == 0)return false;
 		let symb = parseSymbol(tokens.slice(i + 1));
-		// console.log('Tha symb',symb)
+		//console.log('Tha symb',symb)
 		if(!symb) return result;
 
 		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
@@ -207,7 +207,9 @@ export const parseExpr = (tokens, prev) => {
 
 	const remaining_res = parseHorizontal(['REP',...remaining]);
 	//console.log('Will fill with',result.icons);
-	//console.log('Remaingint_res',remaining_res.icons);
+	if (remaining_res?.icons[0]?.icons == undefined) {
+		return [];
+	}
 
 	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
@@ -272,32 +274,24 @@ export const parseSymbol = (tokens) => {
 	const cartouche = parseCartouche(tokens);
 	//console.log('Cartouche',cartouche,tokens);
 	if(cartouche) return cartouche;
-
+	
 	const vertical = parseVertical(tokens);
-	// console.log('Is vertical',vertical,tokens);
+	//console.log('Is vertical',vertical,tokens);
 	if(vertical) return vertical;
-
+	
 	const h_group = parseHorizontalSep(tokens);
 	// console.log('HGroup',tokens,h_group);
 	if(h_group) return h_group;
 
-	
-
 	const subgroup = parseSubGroup(tokens);
-	// console.log('Subgroup',subgroup,tokens);
-	// console.log('Tha tokens',tokens);
-	// if(tokens.length < 11 && tokens.length > 3){
-	// 	console.log('Subgroup',subgroup,tokens);
-	// 	return;
-	// }
+	// console.log('subgroup',subgroup);
 	if(subgroup) return subgroup;
 
 	const nested = parseNested(tokens);
 	//console.log('Is nested',nested,tokens);
-
 	if(nested) return nested;
-
-	return consumeIcon(tokens);
+	
+	return consumeDashedIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
 
 	//return false;
@@ -395,15 +389,15 @@ export const parseVertical = (tokens) => {
 	};
 
 	consumed += expr.consumed;
-
 	for(var i = consumed; i < tokens.length; i++) {
 		if(!vertical_sep.includes(tokens[i])) break;
 		consumed++;
 
 		vertical.type = tokens[i];	// totes les agrupacions verticals d'un mateix bloc han de ser iguals (o tots ":" o tots ";")
 
-		let expr = parseNonvertical(tokens.slice(i + 1));
-
+		const remaining = tokens.slice(i + 1)
+		if (remaining.length == 0) break;
+		let expr = parseNonvertical(remaining);
 		if(!expr && vertical.icons.length == 1) {
 			return {
 				consumed,
@@ -422,6 +416,8 @@ export const parseVertical = (tokens) => {
 		vertical.icons.push(expr.result);
 	}
 
+	if (vertical.icons.length < 2) return false;
+
 	if(vertical.icons.length == 1) {
 		return {
 			consumed,
@@ -429,10 +425,16 @@ export const parseVertical = (tokens) => {
 		};
 	}
 
-	return {
+	const result = {
 		consumed,
 		result:vertical,
 	};
+	const is_dashed = addDashedToSymbol(result,tokens.slice(consumed));
+	if (is_dashed) {
+		return result;
+	}
+
+	return result;
 };
 
 // export const parseNested = (tokens) => {
@@ -543,55 +545,18 @@ export const parseNested = (tokens) => {
 		nested.icons.push(expr.result);
 		must_match_separator = true;
 	}
-
+	
 	if(nested.icons.length < 2) return false;
 
-	return {
+	const result = {
 		consumed,
 		result:nested,
 	};
 
-	// for(var i=first.consumed; i < tokens.length; i++) {
+	addDashedToSymbol(result,tokens.slice(consumed));
 
-	// 	if(tokens[i] != n_sep) {
-	// 		if(nested.icons.length < 2) return false;
+	return result;
 
-	// 		return {
-	// 			consumed,
-	// 			result:nested,
-	// 		};
-	// 	}
-
-	// 	consumed++;
-	// 	i++;
-
-	// 	let expr = parseNonNested(tokens.slice(i));
-
-	// 	if(!expr && nested.icons.length == 1) {
-	// 		return {
-	// 			consumed,
-	// 			result:nested.icons[0],
-	// 		};
-	// 	}
-
-	// 	if(expr.result == undefined) break;
-
-	// 	consumed += expr.consumed;
-	// 	i += expr.consumed - 1;		//Will auto increase TODO migrate to while
-	// 	nested.icons.push(expr.result);
-	// }
-
-	// if(nested.icons.length == 1) {
-	// 	return {
-	// 		consumed,
-	// 		result:nested.icons[0],
-	// 	};
-	// }
-
-	// return {
-	// 	consumed,
-	// 	result:nested,
-	// };
 };
 
 export const parseSubGroup = (tokens) => {
@@ -759,17 +724,37 @@ export const consumeIcon = (tokens) => {
 		};
 	}
 	// console.log('Before dash',result);
+	// const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
+	// if (dash_added) {
+	// 	return result
+	// }
+	
+	return false;
+	//return { consumed:1, result:tokens[0] };
+}
+
+const consumeDashedIcon = (tokens) => {
+
+	if(!isIcon(tokens[0])) return false;
+
+	const result = {consumed:1,result:tokens[0]};
+	if(tokens.length == 1) return result;
+	
+	const inverted = isInverted([tokens[0]], tokens[1]);
+	if(inverted != false) {
+		return {
+			consumed:2,
+			result:inverted,
+		};
+	}
+	// console.log('Before dash',result);
 	const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
-	// console.log(dash_added);
 	if (dash_added) {
-		// console.log('Dash added',result);
 		return result
 	}
 	
-
-
-	return false;
-	//return { consumed:1, result:tokens[0] };
+	//return false;
+	return { consumed:1, result:tokens[0] };
 }
 
 const isInverted = (symbol, token) => {
@@ -804,14 +789,15 @@ const isInverted = (symbol, token) => {
 //
 
 // expr ::= symbol {"-" symbol}
-// nested ::= icon { "& | &&"  icon}
+// nested ::= icon { "& | &&"  icon} {dashed}
 // h_groupable ::= subgroup | nested
-// vertical ::= novert { ":" novert}
+// vertical ::= novert { ":" novert} {dashed}
 // horizontal ::= symbol {dash symbol}
 // cartouche ::= < horizontal >
 // h_grouping ::= h_groupable "*" h_groupable { "*" h_groupable}
 // dashed ::= "#" { ("1"|"2"|"3"|"4") any combination in asc order from 1 to 4 max one of each}  
-// symbol ::= cartouche | vertical | h_grouping | subgroup | nested | icon {"#"1234}
+// symbol ::= cartouche | vertical | h_grouping | subgroup | nested | icon
+// symbol_dashed ::= symbol {"#"1234}
 // subgroup ::= "(" expr ")"
 // novert ::=  h_grouping | nested | subgroup | cartouche |  icon
 // nonest ::= subggroup | icon --- parseNested
