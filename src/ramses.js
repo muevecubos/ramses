@@ -145,7 +145,7 @@ const addDashedToSymbol = (symbol,tokens) => {
 	
 	if (typeof symbol.result != 'object') {
 		symbol.result = {
-			icons:symbol.result,
+			icons:[symbol.result],
 			dashed:dashed.dashed
 		}
 	}

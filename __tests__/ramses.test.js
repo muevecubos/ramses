@@ -1001,7 +1001,7 @@ describe('RamsesIII',()=>{
     })
 
     describe('Parse Dashing',()=>{
-        it ('parses dashed icon #1',()=>{
+        it ('parses dashed icon     #1',()=>{
             expect(parseDashed("#1")).toStrictEqual({
                 consumed:1,
                 dashed:"1"
@@ -1044,7 +1044,7 @@ describe('RamsesIII',()=>{
             expect(parseHorizontal(["A","#1"])).toStrictEqual({
                 consumed:2,
                 icons:[{
-                    icons:'A',
+                    icons:['A'],
                     dashed:'1'
                 }]
             });
@@ -1053,17 +1053,17 @@ describe('RamsesIII',()=>{
         it('checks multiple A#1-B#23',()=>{
             expect(ramsesIII("A#1-B#23")).toStrictEqual(
                 [{
-                    icons:'A',
+                    icons:['A'],
                     dashed:'1'
                 },
-                {icons:'B',dashed:'23'}]
+                {icons:['B'],dashed:'23'}]
             );
         })
 
         it('construct with : can be dashed',()=>{
             expect(ramsesIII("C-A:B#1")).toStrictEqual(
                 ["C",
-                {icons:['A',{icons:"B",dashed:'1'}],type:':'}]
+                {icons:['A',{icons:["B"],dashed:'1'}],type:':'}]
             );
         })
     });
