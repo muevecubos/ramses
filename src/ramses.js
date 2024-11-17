@@ -156,15 +156,13 @@ const addDashedToSymbol = (symbol,tokens) => {
 }
 
 export const parseHorizontal = (tokens) => {
-	//console.log('parseHorizontal',tokens);
-	const symbol = parseSymbol(tokens);
-	// console.log('first symbol',symbol);
+
+	let symbol = parseSymbol(tokens);
+		
 	if(!symbol) return false;
 
 	const result = {}
 
-	// addDashedToSymbol(symbol,tokens.slice(symbol.consumed));
-	// console.log('after',symbol);
 	result.consumed = symbol.consumed;
 	
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
@@ -176,9 +174,14 @@ export const parseHorizontal = (tokens) => {
 			return result;
 		}
 		const remaining = tokens.slice(i + 1);
-		if (remaining.length == 0)return false;
-		let symb = parseSymbol(tokens.slice(i + 1));
-		//console.log('Tha symb',symb)
+		if (remaining.length == 0) return false;
+		
+		let symb = parseDashedHorizontal(tokens.slice(i + 1));
+
+		if (!symb) {
+			symb = parseSymbol(tokens.slice(i + 1));
+		}
+
 		if(!symb) return result;
 
 		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
@@ -219,6 +222,34 @@ export const parseDashedExpr = (tokens) => {
 	}
 }
 
+export const parseDashedHorizontal = (tokens) => {
+	if (tokens[0] != d_sep_i) return false;
+	
+	const expr = parseHorizontal(tokens.slice(1));
+	if (expr === false) return false;	
+
+	if (tokens[expr.consumed+1] != d_sep_e) return false;
+
+	//Add dashed to the inner expression
+	if (expr.icons.length == 1) {
+		return {
+			consumed:expr.consumed+2,
+			result:{
+				...expr.icons[0],
+				dashed:"1234"
+			}
+		}
+	}
+
+	return {
+		consumed:expr.consumed+2,
+		result:{
+			icons:expr.icons,
+			dashed:"1234"
+		}
+	}
+}
+
 const parseExprNonRecursive = (tokens) => {
 	const result = parseHorizontal(tokens);
 	if(result === false) return false;
@@ -243,8 +274,8 @@ const returnExprResult = (result,tokens)=>{
 }
 
 
-export const parseExpr = (tokens, prev) => {
-	
+export const parseExpr = (tokens, prev=undefined) => {
+	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
 	//check for a dashed expression
 	const dashed = parseDashedExpr(tokens);
 	
@@ -258,8 +289,11 @@ export const parseExpr = (tokens, prev) => {
 	const remaining = tokens.slice(result.consumed);
 
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
-	
-	const remaining_res = parseHorizontal(['REP',...remaining]);
+
+	const remaining_res = parseExpr(['REP',...remaining],tokens);
+
+	if (remaining_res == false) return [];
+
 	if (remaining_res?.icons[0]?.icons == undefined) {
 		return [];
 	}
@@ -290,7 +324,7 @@ export const parseSymbol = (tokens) => {
 	const nested = parseNested(tokens);
 	//console.log('Is nested',nested,tokens);
 	if(nested) return nested;
-	
+
 	return consumeDashedIcon(tokens);
 	//if(isIcon(tokens[0]) && tokens.length == 1) return { consumed:1, result:tokens[0] };
 
@@ -647,10 +681,13 @@ export const parseCartouche = (tokens) => {
 
 	cartouche.icons = parseExpr(sub_tokens);
 
-	return {
+	const result = {
 		consumed,
-		result:cartouche
+		result:cartouche,
 	};
+
+	addDashedToSymbol(result,tokens.slice(consumed));
+	return result;
 };
 
 export const parseDashed = (token) => {
@@ -704,7 +741,7 @@ export const parseDashed = (token) => {
 
 
 export const isIcon = (token) => {
-	const operatorRegex = /(-|:|\&|\<|\*)/gi;
+	const operatorRegex = /(-|:|\&|\<|\*|#b|#e)/gi;
 	return !operatorRegex.test(token);
 };
 
@@ -736,7 +773,6 @@ export const consumeIcon = (tokens) => {
 const consumeDashedIcon = (tokens) => {
 
 	if(!isIcon(tokens[0])) return false;
-
 	const result = {consumed:1,result:tokens[0]};
 	if(tokens.length == 1) return result;
 	
