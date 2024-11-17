@@ -1,4 +1,4 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed, parseDashedExpr} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
@@ -1075,6 +1075,89 @@ describe('RamsesIII',()=>{
         it('construct complex with & can be dashed',()=>{
             expect(ramsesIII("C&B#1")).toStrictEqual(
                 [{icons:['C','B'],dashed:'1',type:'&'}]
+            );
+        })
+        
+
+        
+    });
+
+    describe('Dashed Expression',()=>{
+        it ('parses dashed expr #bA-B#e',()=>{
+            expect(parseDashedExpr(["#b","A","-","B","#e"])).toStrictEqual(
+                {
+                    consumed:5,
+                    icons: {
+                        icons: [
+                            'A',
+                            'B'
+                        ],
+                        dashed:'1234'
+                    },
+                }
+            );
+        })
+
+        it ('parses partial dashed expr #bA-B#e-C',()=>{
+            expect(parseExpr(["#b","A","-","B","#e",'-','C'])).toStrictEqual(
+                [{
+                        icons: [
+                            'A',
+                            'B'
+                        ],
+                        dashed:'1234'
+                    },
+                    'C'
+                ]
+            );
+        })
+
+        it ('parses partial dashed expr #bA&B#e',()=>{
+            expect(parseExpr(["#b","A","&","B","#e"])).toStrictEqual(
+                {
+                    icons: [
+                        'A',
+                        'B'
+                    ],
+                    type:'&',
+                    dashed:'1234'
+                }
+            );
+        })
+
+        it ('parses partial dashed expr #bA&B#e-C',()=>{
+            expect(parseExpr(["#b","A","&","B","#e",'-','C'])).toStrictEqual(
+                [{
+                    icons: [
+                        'A',
+                        'B'
+                    ],
+                    type:'&',
+                    dashed:'1234'
+                },
+                'C'
+                ]
+            );
+        })
+
+        it ('tokenizer with dashed expr works fine #bA&B#e-C',()=>{
+            expect(tokenizer('#bA&B#e-C')).toStrictEqual(
+                ["#b","A","&","B","#e",'-','C']
+            );
+        })
+
+        it ('tokenizer with dashed expr works fine #bA&B#e-C',()=>{
+            expect(ramsesIII('#bA&B#e-C')).toStrictEqual(
+                [{
+                    icons: [
+                        'A',
+                        'B'
+                    ],
+                    type:'&',
+                    dashed:'1234'
+                },
+                'C'
+                ]
             );
         })
 

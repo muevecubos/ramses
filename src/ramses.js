@@ -23,11 +23,10 @@ const c_sep_i = "<";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / h
 const c_sep_e = ">";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / hwt initial as in "<H-A-B->"
 const inverted = "\\";
 const nested_separators = [n_sep,nn_sep];
-
+const d_sep_i = "#b";				// starts a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
+const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
 /*
 // DASH MODIFIERS:
-   const d_sep_i = "#b";				// starts a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
-   const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
    const dashed_c = "//";				// adds a full squared dash as in "A-//-B"
    const dashed_s = "/";				// adds a small squared dash as in "A-B:(/-C)"
    const dashed_h = "h/";				// adds a horizontal area dash as in "A-h/:B" will add a h-dashed area on the top vertical group with sign B
@@ -76,7 +75,7 @@ const nested_separators = [n_sep,nn_sep];
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|#b|#e|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -192,80 +191,81 @@ export const parseHorizontal = (tokens) => {
 	return result;
 }
 
-export const parseExpr = (tokens, prev) => {
-	//console.log(tokens);
+export const parseDashedExpr = (tokens) => {
+	if (tokens[0] != d_sep_i) return false;
+	
+	const expr = parseExprNonRecursive(tokens.slice(1));
+	if (expr === false) return false;	
+
+	if (tokens[expr.consumed+1] != d_sep_e) return false;
+
+	//Add dashed to the inner expression
+	if (expr.icons.length == 1) {
+		return {
+			consumed:expr.consumed+2,
+			icons:{
+				...expr.icons[0],
+				dashed:"1234"
+			}
+		}
+	}
+
+	return {
+		consumed:expr.consumed+2,
+		icons:{
+			icons:expr.icons,
+			dashed:"1234"
+		}
+	}
+}
+
+const parseExprNonRecursive = (tokens) => {
 	const result = parseHorizontal(tokens);
-	//console.log('parseExpr result',result);
+	if(result === false) return false;
+
+	return result;
+}
+
+
+const returnExprResult = (result,tokens)=>{
+	const remaining = tokens.slice(result.consumed);
+
+	const parsed = result.icons;
+	if(remaining.length == 0) {
+		return parsed;
+	}
+
+	const remaining_res = parseExpr(['REP',...remaining]);
+
+	remaining_res[0] = parsed;
+
+	return remaining_res;
+}
+
+
+export const parseExpr = (tokens, prev) => {
+	
+	//check for a dashed expression
+	const dashed = parseDashedExpr(tokens);
+	
+	if (dashed) {
+		return returnExprResult(dashed,tokens);
+	}
+
+	const result = parseHorizontal(tokens);
 	if(result === false) return false;
 
 	const remaining = tokens.slice(result.consumed);
 
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
-
-	//console.log('Result',result);
-	//console.log('Remaining',remaining);
-
+	
 	const remaining_res = parseHorizontal(['REP',...remaining]);
-	//console.log('Will fill with',result.icons);
 	if (remaining_res?.icons[0]?.icons == undefined) {
 		return [];
 	}
 
 	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
-
-
-	return;
-
-	//console.log('Call parse expre with',tokens)
-
-	const symbol = parseSymbol(tokens);
-
-	//console.log('Symbol',symbol);
-
-
-	if(!symbol) return false;
-
-	let elements = [];
-
-	if(symbol.consumed != undefined) {
-		elements = Array.isArray(symbol.result) ? symbol.result : [symbol.result];
-	} else {
-		elements.push(symbol.result);
-	}
-
-	for(var i = symbol.consumed; i < tokens.length; i++) {
-		//console.log('Next',tokens[i]);
-		if(!horizontal_sep.includes(tokens[i])) {
-		//if(tokens[i] != h_sep && tokens[i] != h_sep_alt) {
-	
-			//There are still tokens to be consumed but its not a -
-			//Recursive call and with replacement
-			//console.log(['REP',...tokens.slice(symbol.consumed)]);
-			//console.log('enter??',tokens)
-			// let res = parseExpr([tokens.slice(symbol.consumed)]); 
-			// if(res === false) return elements; 
-
-			// elements.push(res);
-			//console.log(['REP', ...tokens.slice(symbol.consumed)]);
-			let res = parseExpr(['REP', ...tokens.slice(symbol.consumed)]); 
-			if(res === false) return elements;
-
-			res[0].icons[0] = symbol.result;
-			elements = res;
-			return (elements);
-		}
-
-		let symb = parseSymbol(tokens.slice(i + 1));
-		//console.log('Parsing second',symb,tokens.slice(i + 1));
-		if(!symb) return elements;
-
-		elements.push(symb.result);
-
-		i += (symb.consumed > 1) ? symb.consumed : 1;
-	}
-	//console.log('Final elements',elements);
-	return elements;
 };
 
 export const parseSymbol = (tokens) => {
@@ -788,6 +788,7 @@ const isInverted = (symbol, token) => {
 // < / <S / <H
 //
 
+// dash_expr :: "#b" expr "#e"
 // expr ::= symbol {"-" symbol}
 // nested ::= icon { "& | &&"  icon} {dashed}
 // h_groupable ::= subgroup | nested
