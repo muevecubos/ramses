@@ -196,16 +196,18 @@ export const parseHorizontal = (tokens) => {
 
 export const parseDashedExpr = (tokens) => {
 	if (tokens[0] != d_sep_i) return false;
+
+	if (tokens[1] != h_sep) return false;
 	
-	const expr = parseExprNonRecursive(tokens.slice(1));
+	const expr = parseExprNonRecursive(tokens.slice(2));
 	if (expr === false) return false;	
 
-	if (tokens[expr.consumed+1] != d_sep_e) return false;
-
+	if (tokens[expr.consumed+2] != h_sep) return false;
+	if (tokens[expr.consumed+3] != d_sep_e) return false;
 	//Add dashed to the inner expression
 	if (expr.icons.length == 1) {
 		return {
-			consumed:expr.consumed+2,
+			consumed:expr.consumed+4,
 			icons:{
 				...expr.icons[0],
 				dashed:"1234"
@@ -214,7 +216,7 @@ export const parseDashedExpr = (tokens) => {
 	}
 
 	return {
-		consumed:expr.consumed+2,
+		consumed:expr.consumed+4,
 		icons:{
 			icons:expr.icons,
 			dashed:"1234"
@@ -224,16 +226,18 @@ export const parseDashedExpr = (tokens) => {
 
 export const parseDashedHorizontal = (tokens) => {
 	if (tokens[0] != d_sep_i) return false;
+	if (tokens[1] != h_sep) return false;
 	
-	const expr = parseHorizontal(tokens.slice(1));
+	const expr = parseHorizontal(tokens.slice(2));
 	if (expr === false) return false;	
 
-	if (tokens[expr.consumed+1] != d_sep_e) return false;
+	if (tokens[expr.consumed+2] != h_sep) return false;
+	if (tokens[expr.consumed+3] != d_sep_e) return false;
 
 	//Add dashed to the inner expression
 	if (expr.icons.length == 1) {
 		return {
-			consumed:expr.consumed+2,
+			consumed:expr.consumed+4,
 			result:{
 				...expr.icons[0],
 				dashed:"1234"
@@ -242,7 +246,7 @@ export const parseDashedHorizontal = (tokens) => {
 	}
 
 	return {
-		consumed:expr.consumed+2,
+		consumed:expr.consumed+4,
 		result:{
 			icons:expr.icons,
 			dashed:"1234"
@@ -260,7 +264,6 @@ const parseExprNonRecursive = (tokens) => {
 
 const returnExprResult = (result,tokens)=>{
 	const remaining = tokens.slice(result.consumed);
-
 	const parsed = result.icons;
 	if(remaining.length == 0) {
 		return parsed;
@@ -278,7 +281,6 @@ export const parseExpr = (tokens, prev=undefined) => {
 	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
 	//check for a dashed expression
 	const dashed = parseDashedExpr(tokens);
-	
 	if (dashed) {
 		return returnExprResult(dashed,tokens);
 	}
@@ -678,7 +680,6 @@ export const parseCartouche = (tokens) => {
 		consumed += sub_tokens.length;
 		sub_tokens = sub_tokens.slice(1, -1);
 	}
-
 	cartouche.icons = parseExpr(sub_tokens);
 
 	const result = {
