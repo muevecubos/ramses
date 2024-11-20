@@ -1100,45 +1100,43 @@ describe('RamsesIII',()=>{
     });
 
     describe('Dashed Expression',()=>{
-        it ('parses dashed expr #b-A-B-#e',()=>{
+        it ('parses dashed expr #b-A-B-#e first',()=>{
             expect(parseDashedExpr(["#b","-","A","-","B","-","#e"])).toStrictEqual(
                 {
                     consumed:7,
-                    icons: {
-                        icons: [
-                            'A',
-                            'B'
-                        ],
-                        dashed:'1234'
-                    },
+                    icons: [
+                        {
+                            icons:["A"],
+                            dashed:'1234'
+                        },
+                        {
+                            icons:["B"],
+                            dashed:'1234'
+                        }
+                    ]
                 }
             );
         })
 
         it ('parses partial dashed expr #b-A-B-#e-C',()=>{
             expect(parseExpr(["#b","-","A","-","B","-","#e",'-','C'])).toStrictEqual(
-                [{
-                        icons: [
-                            'A',
-                            'B'
-                        ],
-                        dashed:'1234'
-                    },
+                [
+                    {icons:['A'],dashed:'1234'},
+                    {icons:['B'],dashed:'1234'},
                     'C'
                 ]
             );
         })
 
-        it ('parses partial dashed expr #bA&B#e',()=>{
+        it ('parses partial dashed expr #bA&B#e first',()=>{
             expect(parseExpr(["#b","-","A","&","B","-","#e"])).toStrictEqual(
-                {
-                    icons: [
-                        'A',
-                        'B'
-                    ],
-                    type:'&',
-                    dashed:'1234'
-                }
+                [
+                    {
+                        icons:['A','B'],
+                        type:'&',    
+                        dashed:'1234'
+                    }
+                ]
             );
         })
 
@@ -1150,7 +1148,7 @@ describe('RamsesIII',()=>{
                         'B'
                     ],
                     type:'&',
-                    dashed:'1234'
+                    dashed:'1234',
                 },
                 'C'
                 ]
@@ -1166,13 +1164,13 @@ describe('RamsesIII',()=>{
         it ('ramses with dashed expr works fine #b-A&B-#e-C',()=>{
             expect(ramsesIII('#b-A&B-#e-C')).toStrictEqual(
                 [{
-                    icons: [
+                    icons:[
                         'A',
                         'B'
                     ],
                     type:'&',
                     dashed:'1234'
-                },
+                },  
                 'C'
                 ]
             );
@@ -1181,6 +1179,51 @@ describe('RamsesIII',()=>{
         it('dashed expression inside of cartouche',()=>{
             expect(ramsesIII("<S-A-#b-B-C-#e->")).toStrictEqual(
                 [{icons:['A',{icons:['B','C'],dashed:'1234'}],type:'serekh'}],//[{icons:['B'],type:'serekh'}]
+            );
+        })
+        
+        
+        it('complex expression A-#b-B-C:D-E:F:G-#e-A',()=>{
+            expect(ramsesIII("#b-B-C:D-#e")).toStrictEqual(
+                [
+                    {icons:['B'],dashed:'1234'},
+                    {
+                        icons:[
+                            'C','D'
+                        ],
+                        type:':',
+                        dashed:'1234'
+                    }
+                ]
+            );
+        })
+        it('complex expression #b-E23-Q3:Q3-#e',()=>{
+            expect(ramsesIII("#b-E23-Q3:Q3-#e")).toStrictEqual(
+                [
+                    {
+                        icons:['E23'],
+                        dashed:'1234'
+                    },
+                    {
+                        icons:[
+                            'Q3','Q3'
+                        ],
+                        type:':',
+                        dashed:'1234'
+                    }
+                ]
+            );
+        })
+        it('complex expression A1-#b-A1-#e-A1',()=>{
+            expect(ramsesIII("A1-#b-A1-#e-A1")).toStrictEqual(
+                [
+                    'A1',
+                    {
+                        icons:['A1'],
+                        dashed:'1234'
+                    },
+                    'A1'
+                ]
             );
         })
 

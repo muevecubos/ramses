@@ -169,25 +169,28 @@ export const parseHorizontal = (tokens) => {
 	result.icons = Array.isArray(symbol.result) ? symbol.result : to_result
 	
 	for(var i = symbol.consumed; i < tokens.length; i++) {
-		//console.log('First token',tokens[i]);
 		if(!horizontal_sep.includes(tokens[i])) {
 			return result;
 		}
 		const remaining = tokens.slice(i + 1);
 		if (remaining.length == 0) return false;
-		
+
 		let symb = parseDashedHorizontal(tokens.slice(i + 1));
 
 		if (!symb) {
 			symb = parseSymbol(tokens.slice(i + 1));
 		}
-
 		if(!symb) return result;
 
 		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
 
 		result.consumed+= symb.consumed;
-		result.icons.push(symb.result);
+		if (symb?.result) {
+			result.icons.push(symb.result);
+		}
+		if (symb?.icons) {
+			result.icons.push(...symb.icons);
+		}
 		result.consumed += symb.consumed;
 		i += (symb.consumed > 1) ? symb.consumed : 1;
 	}
@@ -196,11 +199,44 @@ export const parseHorizontal = (tokens) => {
 
 export const parseDashedExpr = (tokens) => {
 	if (tokens[0] != d_sep_i) return false;
-
 	if (tokens[1] != h_sep) return false;
+	const sub_tokens = [];
+	let valid = false;
+	for (var i = 2; i < tokens.length; i++) {
+		if (tokens[i] == d_sep_e && sub_tokens[sub_tokens.length-1]==h_sep) {
+			sub_tokens.splice(-1);
+			valid = true;
+			break;
+		}
+		sub_tokens.push(tokens[i]);
+	}
+	if (!valid) return false;
 	
-	const expr = parseExprNonRecursive(tokens.slice(2));
-	if (expr === false) return false;	
+	const expr = parseExprNonRecursive(sub_tokens);
+	if (expr === false) return false;
+
+	//Dash separated expression
+	if (expr?.icons) {
+		return {
+			consumed:expr.consumed+4,
+			icons:expr.icons.map(icon=>{
+				if (typeof icon =='string') return {icons:[icon],dashed:"1234"}
+				return {
+					...icon,
+					dashed:'1234'
+				}
+			})
+		};
+	}
+	
+	console.log('expression',expr);
+	return {
+		consumed:expr.consumed+4,
+		icons:{
+			icons:expr.icons,
+			dashed:"1234"
+		}
+	}
 
 	if (tokens[expr.consumed+2] != h_sep) return false;
 	if (tokens[expr.consumed+3] != d_sep_e) return false;
@@ -227,15 +263,34 @@ export const parseDashedExpr = (tokens) => {
 export const parseDashedHorizontal = (tokens) => {
 	if (tokens[0] != d_sep_i) return false;
 	if (tokens[1] != h_sep) return false;
-	
-	const expr = parseHorizontal(tokens.slice(2));
-	if (expr === false) return false;	
+	let sub_expression = [];
+	let valid = false;
+	for (var i = 2; i < tokens.length; i++) {
+		if (tokens[i] == d_sep_e && sub_expression[sub_expression.length-1]==h_sep) {
+			sub_expression.splice(-1);
+			valid = true;
+			break;
+		}
+		sub_expression.push(tokens[i]);
+	}
 
-	if (tokens[expr.consumed+2] != h_sep) return false;
-	if (tokens[expr.consumed+3] != d_sep_e) return false;
+	if (!valid) return false;
+	const expr = parseHorizontal(sub_expression);
+	if (expr === false) return false;	
 
 	//Add dashed to the inner expression
 	if (expr.icons.length == 1) {
+			return {
+				consumed:expr.consumed+4,
+				icons:expr.icons.map(icon=>{
+					if (typeof icon =='string') return {icons:[icon],dashed:"1234"}
+					return {
+						...icon,
+						dashed:'1234'
+					}
+				})
+			};
+		
 		return {
 			consumed:expr.consumed+4,
 			result:{
@@ -279,13 +334,15 @@ const returnExprResult = (result,tokens)=>{
 
 export const parseExpr = (tokens, prev=undefined) => {
 	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
-	//check for a dashed expression
-	const dashed = parseDashedExpr(tokens);
-	if (dashed) {
-		return returnExprResult(dashed,tokens);
+	
+	let result = parseDashedExpr(tokens);
+	// if (result === false) {
+	// 	return false;
+	// 	// return returnExprResult(dashed,tokens);
+	// }
+	if (result === false) {
+		result = parseHorizontal(tokens);
 	}
-
-	const result = parseHorizontal(tokens);
 	if(result === false) return false;
 
 	const remaining = tokens.slice(result.consumed);
@@ -296,17 +353,18 @@ export const parseExpr = (tokens, prev=undefined) => {
 
 	if (remaining_res == false) return [];
 
-	if (remaining_res?.icons[0]?.icons == undefined) {
-		return [];
+	if (Array.isArray(remaining_res)) {
+		return [...result.icons,...remaining_res.slice(1)];
 	}
+	// if (remaining_res?.icons[0]?.icons == undefined) {
+	// 	return [];
+	// }
 
-	remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
+	//remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
 };
 
-export const parseSymbol = (tokens) => {
-	//console.log(tokens,tokens.length);
-	
+export const parseSymbol = (tokens) => {	
 	const cartouche = parseCartouche(tokens);
 	//console.log('Cartouche',cartouche,tokens);
 	if(cartouche) return cartouche;
