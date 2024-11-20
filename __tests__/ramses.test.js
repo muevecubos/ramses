@@ -1214,6 +1214,7 @@ describe('RamsesIII',()=>{
                 ]
             );
         })
+
         it('complex expression A1-#b-A1-#e-A1',()=>{
             expect(ramsesIII("A1-#b-A1-#e-A1")).toStrictEqual(
                 [
@@ -1223,6 +1224,39 @@ describe('RamsesIII',()=>{
                         dashed:'1234'
                     },
                     'A1'
+                ]
+            );
+        })
+
+        it('complex expression #b-E23-Q3:Q3-#e-A1',()=>{
+            expect(ramsesIII("#b-E23-Q3:Q3-#e-A1")).toStrictEqual(
+                [
+                    {
+                        "icons": [
+                            "E23"
+                        ],
+                        "dashed": "1234"
+                    },
+                    {
+                        "type": ":",
+                        "icons": [
+                            "Q3",
+                            "Q3"
+                        ],
+                        "dashed": "1234"
+                    },
+                    'A1'
+                ]
+            );
+        })
+
+        it('complex expression #b-E23-Q3:Q3-#e-A1',()=>{
+            expect(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")).toStrictEqual(
+                [
+                    {icons:["S29"],dashed:"1234"},
+                    {icons:["D21","D36"],type:":",dashed:"1234"},
+                    'D28',
+                    'Z1'
                 ]
             );
         })

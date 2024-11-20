@@ -156,7 +156,6 @@ const addDashedToSymbol = (symbol,tokens) => {
 }
 
 export const parseHorizontal = (tokens) => {
-
 	let symbol = parseSymbol(tokens);
 		
 	if(!symbol) return false;
@@ -164,7 +163,6 @@ export const parseHorizontal = (tokens) => {
 	const result = {}
 
 	result.consumed = symbol.consumed;
-	
 	const to_result = typeof symbol.result == 'string' ? [symbol.result] : [symbol.result];
 	result.icons = Array.isArray(symbol.result) ? symbol.result : to_result
 	
@@ -181,17 +179,15 @@ export const parseHorizontal = (tokens) => {
 			symb = parseSymbol(tokens.slice(i + 1));
 		}
 		if(!symb) return result;
-
 		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
 
-		result.consumed+= symb.consumed;
 		if (symb?.result) {
 			result.icons.push(symb.result);
 		}
 		if (symb?.icons) {
 			result.icons.push(...symb.icons);
 		}
-		result.consumed += symb.consumed;
+		result.consumed += symb.consumed+1;
 		i += (symb.consumed > 1) ? symb.consumed : 1;
 	}
 	return result;
@@ -229,7 +225,6 @@ export const parseDashedExpr = (tokens) => {
 		};
 	}
 	
-	console.log('expression',expr);
 	return {
 		consumed:expr.consumed+4,
 		icons:{
@@ -291,13 +286,6 @@ export const parseDashedHorizontal = (tokens) => {
 				})
 			};
 		
-		return {
-			consumed:expr.consumed+4,
-			result:{
-				...expr.icons[0],
-				dashed:"1234"
-			}
-		}
 	}
 
 	return {
@@ -336,6 +324,7 @@ export const parseExpr = (tokens, prev=undefined) => {
 	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
 	
 	let result = parseDashedExpr(tokens);
+	
 	// if (result === false) {
 	// 	return false;
 	// 	// return returnExprResult(dashed,tokens);
