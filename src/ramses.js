@@ -94,16 +94,23 @@ const groupable = (tokens) => {
 	if(nested) return nested;
 
 	const symbol = isIcon(tokens[0]) ? {result:tokens[0],consumed:1} : false;
+
+	const inverted = isInverted([symbol.result], tokens[symbol.consumed]);
+	if(inverted) {
+		return {result:inverted,consumed:symbol.consumed+1}
+	}
+
+	
+
 	return symbol;
 }
 
 export const parseHorizontalSep = (tokens) => {
 	if(tokens.length < 3) return false;
-
 	let consumed = 0;
 
 	const symbol = groupable(tokens);
-	// console.log('Groupable',symbol);
+
 	if(!symbol) return false;
 	consumed+= symbol.consumed;
 

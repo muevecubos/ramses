@@ -143,6 +143,12 @@ describe('RamsesIII',()=>{
                 {consumed:7,result:{type:'&&&',icons:['A',{icons:['B','C'],type:'&'}]}}
             )
         })
+
+        // it('parses regular dash group A&&&(B-C)',()=>{
+        //     expect(parseNested(['A','&&&','(','B','-','C',')'])).toStrictEqual(
+        //         {consumed:7,result:{type:'&&&',icons:['A',{icons:['B','C'],type:'-'}]}}
+        //     )
+        // })
     
     })
 
@@ -338,6 +344,12 @@ describe('RamsesIII',()=>{
     it('parses a group (t-p)',()=>{
         expect(ramsesIII('(t-p)')).toStrictEqual([
             "t","p"
+        ])
+    })
+
+    it('parses a group A:(B-C)',()=>{
+        expect(ramsesIII('A:(B-C)')).toStrictEqual([
+            {type:':',icons:['A',['B','C']]}
         ])
     })
 
@@ -878,6 +890,26 @@ describe('RamsesIII',()=>{
                 
             ])
         })
+
+        it ('Expression with inverted marc A:B\\*C ',()=>{
+            const result = ramsesIII("A:B\\*C");
+            expect (result).toStrictEqual([{
+                "type": ":",
+                "icons": [
+                    "A",
+                    {
+                        "type":"*",
+                        "icons":[
+                              {
+                                    "inverted": true,
+                                    "icon": "B"
+                              },
+                              "C"
+                        ]
+                    }
+                ]
+            }])
+        })
     })
     
     
@@ -1250,7 +1282,7 @@ describe('RamsesIII',()=>{
             );
         })
 
-        it('complex expression #b-E23-Q3:Q3-#e-A1',()=>{
+        it('complex expression #b-S29-D21:D36-#e-D28-Z1',()=>{
             expect(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")).toStrictEqual(
                 [
                     {icons:["S29"],dashed:"1234"},
