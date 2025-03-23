@@ -166,7 +166,6 @@ export const parseHorizontal = (tokens) => {
 	let symbol = parseSymbol(tokens);
 		
 	if(!symbol) return false;
-
 	const result = {}
 
 	result.consumed = symbol.consumed;
@@ -329,7 +328,6 @@ const returnExprResult = (result,tokens)=>{
 
 export const parseExpr = (tokens, prev=undefined) => {
 	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
-	
 	let result = parseDashedExpr(tokens);
 	
 	// if (result === false) {
@@ -801,43 +799,119 @@ export const isIcon = (token) => {
 };
 
 export const consumeIcon = (tokens) => {
-	// console.log('ConsumeIcon',tokens);
+	//console.log('ConsumeIcon',tokens);
 	if(!isIcon(tokens[0])) return false;
 
 	const result = {consumed:1,result:tokens[0]};
 
 	if(tokens.length == 1) return result;
-	
+
+	let found = false;
+
 	const inverted = isInverted([tokens[0]], tokens[1]);
 	if(inverted != false) {
-		return {
-			consumed:2,
-			result:inverted,
-		};
+		found = true;
+		result.consumed = 2;
+		result.result = inverted;
+		// return {
+		// 	consumed:2,
+		// 	result:inverted,
+		// };
 	}
-	// console.log('Before dash',result);
-	// const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
-	// if (dash_added) {
-	// 	return result
-	// }
+
+	const has_options = consumeIconOptions(tokens.slice(result.consumed));
+	if(has_options) {
+		found = true;
+		result.consumed += has_options.consumed;
+		if (typeof result.result == 'string') {
+			result.result = {
+				icon:result.result,
+				dynamic:has_options.dynamic
+			}
+		}
+		else {
+			result.result.dynamic = has_options.dynamic;
+		}
+	}
+
+	if (found) return result;
 	
 	return false;
-	//return { consumed:1, result:tokens[0] };
+	
+}
+
+const consumeIconOptions = (tokens) => {
+	//console.log('ConsumeIconOptions',tokens);
+	if (tokens[0] != '{') return false;
+
+	let consumed = 1;
+	const options = [];
+	let current = [];
+	const dynamic = {};
+	let is_valid = false;
+	for (var i = 1; i < tokens.length; i++) {
+		if (tokens[i] == '}') {
+			if (current.length > 0) options.push(current);
+			consumed++;
+			is_valid = true;
+			break;
+		}
+		consumed++;
+		if (tokens[i] == ',') {
+			options.push(current);
+			current = [];
+			continue;
+		}
+		current.push(tokens[i]);
+	}
+
+	for (var j in options) {
+		dynamic[options[j][0]] = options[j][2];
+	}
+
+	if (!is_valid) return false;
+	
+	return {
+		consumed,
+		dynamic
+	}
 }
 
 const consumeDashedIcon = (tokens) => {
 
 	if(!isIcon(tokens[0])) return false;
+
 	const result = {consumed:1,result:tokens[0]};
+	
 	if(tokens.length == 1) return result;
+	
+	let found = false;
 	
 	const inverted = isInverted([tokens[0]], tokens[1]);
 	if(inverted != false) {
-		return {
-			consumed:2,
-			result:inverted,
-		};
+		found = true;
+		found = true;
+		result.consumed = 2;
+		result.result = inverted;
 	}
+
+	const has_options = consumeIconOptions(tokens.slice(result.consumed));
+	if(has_options) {
+		found = true;
+		result.consumed += has_options.consumed;
+		if (typeof result.result == 'string') {
+			result.result = {
+				icon:result.result,
+				dynamic:has_options.dynamic
+			}
+		}
+		else {
+			result.result.dynamic = has_options.dynamic;
+		}
+	}
+
+	if (found) return result;
+
 	// console.log('Before dash',result);
 	const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
 	if (dash_added) {

@@ -8,6 +8,12 @@ describe('RamsesIII',()=>{
                 ['17','-','A','-','B']
             )
         })
+
+        it('tokenizes a dynamic icon',()=>{
+            expect(tokenizer('A{w=12}')).toStrictEqual(
+                ['A','{','w','=','12','}']
+            )
+        })
     })
 
     describe('ParseAlternativeHorizontal',()=>{
@@ -226,6 +232,24 @@ describe('RamsesIII',()=>{
         it ('Returns a simple inverted followed by more things',()=>{
             expect (consumeIcon(['A','\\','-','B'])).toStrictEqual(
                 {consumed:2,result:{icon:'A',inverted:true}}
+            )
+        })
+
+        it ('Parses dynamic icons',()=>{
+            expect (consumeIcon(['A','{','w','=','12','}'])).toStrictEqual(
+                {consumed:6,result:{icon:'A',dynamic:{w:"12"}}}
+            )
+        })
+
+        it ('Parses dynamic icons multiple props',()=>{
+            expect (consumeIcon(['A','{','w','=','12',',','h','=','16','}'])).toStrictEqual(
+                {consumed:10,result:{icon:'A',dynamic:{w:"12",h:"16"}}}
+            )
+        })
+
+        it ('Parses dynamic icons multiple props and inverted',()=>{
+            expect (consumeIcon(['A','\\','{','w','=','12',',','h','=','16','}'])).toStrictEqual(
+                {consumed:11,result:{icon:'A',dynamic:{w:"12",h:"16"},inverted:true}}
             )
         })
     })
@@ -891,7 +915,7 @@ describe('RamsesIII',()=>{
             ])
         })
 
-        it ('Expression with inverted marc A:B\\*C ',()=>{
+        it ('Expression with inverted A:B\\*C ',()=>{
             const result = ramsesIII("A:B\\*C");
             expect (result).toStrictEqual([{
                 "type": ":",
@@ -907,6 +931,23 @@ describe('RamsesIII',()=>{
                               "C"
                         ]
                     }
+                ]
+            }])
+        })
+
+        it ('Expression with inverted A:(B\\-C) ',()=>{
+            const result = ramsesIII("A:(B\\-C)");
+            expect (result).toStrictEqual([{
+                "type": ":",
+                "icons": [
+                    "A",
+                    [
+                        {
+                            "inverted": true,
+                            "icon": "B"
+                        },
+                        "C"
+                    ]
                 ]
             }])
         })
@@ -1290,6 +1331,36 @@ describe('RamsesIII',()=>{
                     'D28',
                     'Z1'
                 ]
+            );
+        })
+
+        it('Expression with dynamic icon',()=>{
+            expect(ramsesIII("A-B{h=12}")).toStrictEqual(
+                [
+                    'A',
+                    {icon:'B',dynamic:{h:"12"}},
+                ]
+            );
+        })
+
+        it('Expression with dynamic icon in the middle',()=>{
+            expect(ramsesIII("A{h=12}-B")).toStrictEqual(
+                [
+                    {icon:'A',dynamic:{h:"12"}},
+                    'B',
+                ]
+            );
+        })
+
+        it('Expression with : and dynamic icon',()=>{
+            expect(ramsesIII("A{h=12}:B")).toStrictEqual(
+                [{
+                    type:':',
+                    icons:[
+                        {icon:'A',dynamic:{h:"12"}},
+                        'B',
+                    ]
+                }]
             );
         })
 
