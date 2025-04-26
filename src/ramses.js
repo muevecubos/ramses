@@ -100,7 +100,21 @@ const groupable = (tokens) => {
 		return {result:inverted,consumed:symbol.consumed+1}
 	}
 
-	
+	const has_options = consumeIconOptions(tokens.slice(symbol.consumed));
+	let found = false;
+	if(has_options) {
+		found = true;
+		symbol.consumed += has_options.consumed;
+		if (typeof symbol.result == 'string') {
+			symbol.result = {
+				icon:symbol.result,
+				dynamic:has_options.dynamic
+			}
+		}
+		else {
+			symbol.result.dynamic = has_options.dynamic;
+		}
+	}
 
 	return symbol;
 }
@@ -122,11 +136,10 @@ export const parseHorizontalSep = (tokens) => {
 		],
 	};
 	let is_valid = false;
-	//console.log(result);
+	
 	for(var i = consumed; i < tokens.length; i++) {
 		if(tokens[i] != h_sep_alt) {
-			// is_valid = false;
-			break; //return is_valid ? {consumed,result} : false;
+			break;
 		}
 		i++;
 		consumed++;
@@ -813,10 +826,6 @@ export const consumeIcon = (tokens) => {
 		found = true;
 		result.consumed = 2;
 		result.result = inverted;
-		// return {
-		// 	consumed:2,
-		// 	result:inverted,
-		// };
 	}
 
 	const has_options = consumeIconOptions(tokens.slice(result.consumed));

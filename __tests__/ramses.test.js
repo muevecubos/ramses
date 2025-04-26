@@ -1369,6 +1369,33 @@ describe('RamsesIII',()=>{
                 ]
             );
         })
+        it('Expression * P6*D34{w:-4}',()=>{
+            expect(ramsesIII("P6*D34{w:-4}")).toStrictEqual(
+                [
+                    {
+                        type:'*',
+                        icons:[
+                            'P6',
+                            {icon:'D34',dynamic:{w:-4}},
+                        ]
+                    }
+                ]
+            );
+        })
+
+        it('Expression * D34{w:-4}*P6',()=>{
+            expect(ramsesIII("D34{w:-4}*P6")).toStrictEqual(
+                [
+                    {
+                        type:'*',
+                        icons:[
+                            {icon:'D34',dynamic:{w:-4}},
+                            'P6',
+                        ]
+                    }
+                ]
+            );
+        })
 
         it('Expression with : and dynamic icon',()=>{
             expect(ramsesIII("A{h:12}:B")).toStrictEqual(
