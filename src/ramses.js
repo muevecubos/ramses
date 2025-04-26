@@ -7,8 +7,6 @@
 //   5  numeric ::= /[0-9]+(\.[0-9]*)?([eE][\+\-]?[0-9]+)?/
 //   5  ident ::= /[A-Za-z_][A-Za-z_0-9]*/
 
-import { parse } from "@babel/core";
-
 const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
 const dashed = "#";
