@@ -236,20 +236,20 @@ describe('RamsesIII',()=>{
         })
 
         it ('Parses dynamic icons',()=>{
-            expect (consumeIcon(['A','{','w','=','12','}'])).toStrictEqual(
-                {consumed:6,result:{icon:'A',dynamic:{w:"12"}}}
+            expect (consumeIcon(['A','{','w',':','12','}'])).toStrictEqual(
+                {consumed:6,result:{icon:'A',dynamic:{w:12}}}
             )
         })
 
         it ('Parses dynamic icons multiple props',()=>{
-            expect (consumeIcon(['A','{','w','=','12',',','h','=','16','}'])).toStrictEqual(
-                {consumed:10,result:{icon:'A',dynamic:{w:"12",h:"16"}}}
+            expect (consumeIcon(['A','{','w',':','12',',','h',':','16','}'])).toStrictEqual(
+                {consumed:10,result:{icon:'A',dynamic:{w:12,h:16}}}
             )
         })
 
         it ('Parses dynamic icons multiple props and inverted',()=>{
-            expect (consumeIcon(['A','\\','{','w','=','12',',','h','=','16','}'])).toStrictEqual(
-                {consumed:11,result:{icon:'A',dynamic:{w:"12",h:"16"},inverted:true}}
+            expect (consumeIcon(['A','\\','{','w',':','12',',','h',':','16','}'])).toStrictEqual(
+                {consumed:11,result:{icon:'A',dynamic:{w:12,h:16},inverted:true}}
             )
         })
     })
@@ -1335,29 +1335,47 @@ describe('RamsesIII',()=>{
         })
 
         it('Expression with dynamic icon',()=>{
-            expect(ramsesIII("A-B{h=12}")).toStrictEqual(
+            expect(ramsesIII("A-B{h:12}")).toStrictEqual(
                 [
                     'A',
-                    {icon:'B',dynamic:{h:"12"}},
+                    {icon:'B',dynamic:{h:12}},
+                ]
+            );
+        })
+
+        it('Expression with dynamic icon supports multichar keys and negative values',()=>{
+            expect(ramsesIII("A-B{hello:-12}")).toStrictEqual(
+                [
+                    'A',
+                    {icon:'B',dynamic:{hello:-12}},
+                ]
+            );
+        })
+
+        it('Expression with dynamic icon supports decimals and fractions',()=>{
+            expect(ramsesIII("A-B{hello:1.5,bye:\"5/7\"}")).toStrictEqual(
+                [
+                    'A',
+                    {icon:'B',dynamic:{hello:1.5,bye:"5/7"}},
                 ]
             );
         })
 
         it('Expression with dynamic icon in the middle',()=>{
-            expect(ramsesIII("A{h=12}-B")).toStrictEqual(
+            expect(ramsesIII("A{h:12}-B")).toStrictEqual(
                 [
-                    {icon:'A',dynamic:{h:"12"}},
+                    {icon:'A',dynamic:{h:12}},
                     'B',
                 ]
             );
         })
 
         it('Expression with : and dynamic icon',()=>{
-            expect(ramsesIII("A{h=12}:B")).toStrictEqual(
+            expect(ramsesIII("A{h:12}:B")).toStrictEqual(
                 [{
                     type:':',
                     icons:[
-                        {icon:'A',dynamic:{h:"12"}},
+                        {icon:'A',dynamic:{h:12}},
                         'B',
                     ]
                 }]

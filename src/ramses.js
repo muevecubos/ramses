@@ -7,6 +7,8 @@
 //   5  numeric ::= /[0-9]+(\.[0-9]*)?([eE][\+\-]?[0-9]+)?/
 //   5  ident ::= /[A-Za-z_][A-Za-z_0-9]*/
 
+import { parse } from "@babel/core";
+
 const h_sep = "-";			// horizontal group as in "A-B"
 const h_sep_alt = "*";		// horizontal group as in "A*B"
 const dashed = "#";
@@ -840,41 +842,65 @@ export const consumeIcon = (tokens) => {
 	
 }
 
-const consumeIconOptions = (tokens) => {
-	//console.log('ConsumeIconOptions',tokens);
-	if (tokens[0] != '{') return false;
-
+const consumeJsonAlike = (tokens) => {
+	if(tokens[0] != '{') return false;
 	let consumed = 1;
-	const options = [];
-	let current = [];
-	const dynamic = {};
 	let is_valid = false;
+
 	for (var i = 1; i < tokens.length; i++) {
-		if (tokens[i] == '}') {
-			if (current.length > 0) options.push(current);
+		if(tokens[i] == '}') {
 			consumed++;
 			is_valid = true;
 			break;
 		}
 		consumed++;
-		if (tokens[i] == ',') {
-			options.push(current);
-			current = [];
-			continue;
-		}
-		current.push(tokens[i]);
 	}
-
-	for (var j in options) {
-		dynamic[options[j][0]] = options[j][2];
-	}
-
 	if (!is_valid) return false;
+
+	const json_string = tokens.slice(0,consumed ).join('');
+	//Add " to parse json
+	const fixedJSON = json_string.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2": ');
+	const json = JSON.parse(fixedJSON);
+
+	return {consumed,dynamic:json};
+}
+
+const consumeIconOptions = (tokens) => {
+	return consumeJsonAlike(tokens);
+	//console.log('ConsumeIconOptions',tokens);
+	// if (tokens[0] != '{') return false;
+
+	// let consumed = 1;
+	// const options = [];
+	// let current = [];
+	// const dynamic = {};
+	// let is_valid = false;
+	// for (var i = 1; i < tokens.length; i++) {
+	// 	if (tokens[i] == '}') {
+	// 		if (current.length > 0) options.push(current);
+	// 		consumed++;
+	// 		is_valid = true;
+	// 		break;
+	// 	}
+	// 	consumed++;
+	// 	if (tokens[i] == ',') {
+	// 		options.push(current);
+	// 		current = [];
+	// 		continue;
+	// 	}
+	// 	current.push(tokens[i]);
+	// }
+
+	// for (var j in options) {
+	// 	dynamic[options[j][0]] = options[j][2];
+	// }
+
+	// if (!is_valid) return false;
 	
-	return {
-		consumed,
-		dynamic
-	}
+	// return {
+	// 	consumed,
+	// 	dynamic
+	// }
 }
 
 const consumeDashedIcon = (tokens) => {
