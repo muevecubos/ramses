@@ -1383,6 +1383,28 @@ describe('RamsesIII',()=>{
             );
         })
 
+        it('Expression D{w:4.5,h:2}',()=>{
+            expect(ramsesIII("D{w:4.5,h:2}")).toStrictEqual(
+                [
+                    {
+                        icon:'D',
+                        dynamic:{w:4.5,h:2}
+                    }
+                ]
+            );
+        })
+        
+        it('Expression Y1{h:1.5}',()=>{
+            expect(ramsesIII("Y1{h:1.5}")).toStrictEqual(
+                [
+                    {
+                        icon:'Y1',
+                        dynamic:{h:1.5}
+                    }
+                ]
+            );
+        })
+
         it('Expression * D34{w:-4}*P6',()=>{
             expect(ramsesIII("D34{w:-4}*P6")).toStrictEqual(
                 [
