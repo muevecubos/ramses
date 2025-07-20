@@ -1,4 +1,4 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed, parseDashedExpr} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed, parseDashedExpr, consumeDashedIcon} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
@@ -1172,6 +1172,36 @@ describe('RamsesIII',()=>{
     
     });
 
+    describe('consumeDashedIcon ',()=>{
+        it ('parses a icon with inverted and dashed',()=>{
+            expect(consumeDashedIcon(["A","\\","#1"])).toStrictEqual({
+                
+                consumed:3,
+                result:{
+                    icon:'A',
+                    inverted:true,
+                    dashed:'1'
+                }
+                
+            })
+        });
+        it ('parses a icon with inverted and json',()=>{
+            expect(consumeDashedIcon(["A","\\","{","w",":","2","}"])).toStrictEqual({
+                
+                consumed:7,
+                result:{
+                    icon:'A',
+                    inverted:true,
+                    dynamic:{
+                        w:2
+                    }
+                }
+                
+            })
+        });
+    });  
+
+
     describe('Dashed Expression',()=>{
         it ('parses dashed expr #b-A-B-#e first',()=>{
             expect(parseDashedExpr(["#b","-","A","-","B","-","#e"])).toStrictEqual(
@@ -1433,47 +1463,59 @@ describe('RamsesIII',()=>{
 
         
     });
+
+    describe('Color changing',()=>{
+        
+        it('Changes to color red no ending',()=>{
+            expect(ramsesIII("A-$b-B-C")).toStrictEqual(
+                [
+                    'A',
+                    'B',
+                    'C'
+                ]
+            )
+        })
+
+        it('Changes to color red no ending',()=>{
+            expect(ramsesIII("A-$r-B-C")).toStrictEqual(
+                [
+                    'A',
+                    { icons: [ 'B' ], red: true }, 
+                    { icons: [ 'C' ], red: true }
+                ]
+            )
+        })
+
+        it('Changes to color red then black',()=>{
+            expect(ramsesIII("A-$r-B-$b-C")).toStrictEqual(
+                [
+                    'A',
+                    { icons: [ 'B' ], red: true }, 
+                    'C'
+                ]
+            )
+        })
+
+        it('Changes to color red then black',()=>{
+            expect(ramsesIII("A-$r-B-$b-C-$r-D")).toStrictEqual(
+                [
+                    'A',
+                    { icons: [ 'B' ], red: true }, 
+                    'C',
+                    { icons: [ 'D' ], red: true }
+                ]
+            )
+        })
+
+        it('Changes to color red of an expression',()=>{
+            expect(ramsesIII("$r-A&B")).toStrictEqual([
+                {
+                    type:'&',
+                    icons:['A','B'],
+                    red:true
+                }
+            ])
+        })
+    })
 })
 
-/**
- * @deprecated
- * 
- */
-// it('parses complex with * A-<-B*C&D*E:E*F&G->-E:E*F&G',()=>{
-//     const result = ramsesIII('A-<-B*C&D*E:E*F&G->-E:E*F&G');
-//     expect (result).toStrictEqual([
-//         'A',
-//         {
-//             type:'cartouche',
-//             icons:[
-//                 'B',
-//                 {
-//                     type:'&',
-//                     icons:['C','D']
-//                 },
-//                 {
-//                     type:":",
-//                     icons:[
-//                         'E',
-//                         'E',
-//                     ]
-//                 },
-//                 {
-//                     type:'&',
-//                     icons:['F','G']
-//                 }
-//             ]
-//         },
-//         {
-//             type:":",
-//             icons:[
-//                 "E",
-//                 'E',    
-//             ]
-//         },
-//         {
-//             type:'&',
-//             icons:['F','G']
-//         }
-//     ])
-// })

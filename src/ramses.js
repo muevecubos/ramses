@@ -25,6 +25,8 @@ const inverted = "\\";
 const nested_separators = [n_sep,nn_sep];
 const d_sep_i = "#b";				// starts a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
 const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
+const red_i = "$r";					// starts red text as in "A-$r-B-C-$b-D-E" will paint red signs B and C
+const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
 /*
 // DASH MODIFIERS:
    const dashed_c = "//";				// adds a full squared dash as in "A-//-B"
@@ -33,8 +35,6 @@ const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will d
    const dashed_v = "v/";				// adds a vertical area dash as in "A-v/-B"
 // COLOR MODIFIERS (applying to group of signs):
 // If red will add a "red" property to "custom" object to all the tokens affected (see below):
-*  const red_i = "$r";					// starts red text as in "A-$r-B-C-$b-D-E" will paint red signs B and C
-   const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
 // TRANSFORMATOR MODIFIERS (applying only to individual signs):
 *  const flip = "{sign}\"				// flips horizontally the sign that goes with as in "A-B\-C" will flip the sign B
 *  const rotate = "{sign}\R{degrees}"	// rotates the sign that goes with x degrees clockwise as in "A-B\R20-C" will rotate sign B 20º
@@ -75,7 +75,7 @@ const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will d
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|#b|#e|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|#b|#e|\$r|\$b|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -195,10 +195,13 @@ export const parseHorizontal = (tokens) => {
 		let symb = parseDashedHorizontal(tokens.slice(i + 1));
 
 		if (!symb) {
+			symb = parseColoredExpression(tokens.slice(i + 1));
+		}
+
+		if (!symb) {
 			symb = parseSymbol(tokens.slice(i + 1));
 		}
 		if(!symb) return result;
-		//addDashedToSymbol(symb,tokens.slice(i+1+symb.consumed));
 
 		if (symb?.result) {
 			result.icons.push(symb.result);
@@ -316,6 +319,54 @@ export const parseDashedHorizontal = (tokens) => {
 	}
 }
 
+export const parseColoredExpression = (tokens) => {
+	const colors = [red_i,black_i];
+	if (!colors.includes(tokens[0])) return false;
+
+	if (tokens[1] != h_sep) return false;
+	const sub_tokens = [];
+	let consumed = 2;
+	for (var i = 2; i < tokens.length; i++) {
+		if (colors.includes(tokens[i]) && sub_tokens[sub_tokens.length-1]==h_sep) {
+			sub_tokens.splice(-1);
+			break;
+		}
+		consumed++;
+		sub_tokens.push(tokens[i]);
+	}
+	const expr = parseExprNonRecursive(sub_tokens);
+	if (expr === false) return false;
+
+	if (tokens[0] == black_i) return {
+		consumed:expr.consumed+consumed,
+		icons:expr.icons	
+	}
+	
+
+	//Red color
+	if (expr?.icons) {
+		return {
+			consumed:expr.consumed+consumed,
+			icons:expr.icons.map(icon=>{
+				if (typeof icon =='string') return {icons:[icon],red:true}
+				return {
+					...icon,
+					red:true
+				}
+			})
+		};
+	}
+	
+	return {
+		consumed:expr.consumed+consumed,
+		icons:{
+			icons:expr.icons,
+			red:true
+		}
+	}
+}
+
+
 const parseExprNonRecursive = (tokens) => {
 	const result = parseHorizontal(tokens);
 	if(result === false) return false;
@@ -342,11 +393,15 @@ const returnExprResult = (result,tokens)=>{
 export const parseExpr = (tokens, prev=undefined) => {
 	if (prev != undefined && JSON.stringify(tokens) == JSON.stringify(prev)) return false;
 	let result = parseDashedExpr(tokens);
+
+	if (result === false) {
+		result = parseColoredExpression(tokens);
+	}
+
+	if (result === false) {
+		result = parseColoredExpression(tokens);
+	}
 	
-	// if (result === false) {
-	// 	return false;
-	// 	// return returnExprResult(dashed,tokens);
-	// }
 	if (result === false) {
 		result = parseHorizontal(tokens);
 	}
@@ -874,43 +929,9 @@ const consumeJsonAlike = (tokens) => {
 
 const consumeIconOptions = (tokens) => {
 	return consumeJsonAlike(tokens);
-	//console.log('ConsumeIconOptions',tokens);
-	// if (tokens[0] != '{') return false;
-
-	// let consumed = 1;
-	// const options = [];
-	// let current = [];
-	// const dynamic = {};
-	// let is_valid = false;
-	// for (var i = 1; i < tokens.length; i++) {
-	// 	if (tokens[i] == '}') {
-	// 		if (current.length > 0) options.push(current);
-	// 		consumed++;
-	// 		is_valid = true;
-	// 		break;
-	// 	}
-	// 	consumed++;
-	// 	if (tokens[i] == ',') {
-	// 		options.push(current);
-	// 		current = [];
-	// 		continue;
-	// 	}
-	// 	current.push(tokens[i]);
-	// }
-
-	// for (var j in options) {
-	// 	dynamic[options[j][0]] = options[j][2];
-	// }
-
-	// if (!is_valid) return false;
-	
-	// return {
-	// 	consumed,
-	// 	dynamic
-	// }
 }
 
-const consumeDashedIcon = (tokens) => {
+export const consumeDashedIcon = (tokens) => {
 
 	if(!isIcon(tokens[0])) return false;
 
@@ -927,8 +948,9 @@ const consumeDashedIcon = (tokens) => {
 		result.consumed = 2;
 		result.result = inverted;
 	}
-
+	
 	const has_options = consumeIconOptions(tokens.slice(result.consumed));
+
 	if(has_options) {
 		found = true;
 		result.consumed += has_options.consumed;
@@ -943,13 +965,15 @@ const consumeDashedIcon = (tokens) => {
 		}
 	}
 
-	if (found) return result;
+	
 
 	// console.log('Before dash',result);
 	const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));
 	if (dash_added) {
 		return result
 	}
+
+	if (found) return result;
 	
 	//return false;
 	return { consumed:1, result:tokens[0] };
@@ -975,6 +999,9 @@ const isInverted = (symbol, token) => {
 	return {...symbol,inverted:true}
 }
 
+const RamsesState = {
+	current_color:'black'
+}
 
 // A-<-B-C&D-E:(E-F&G)->-E:(E-F&G)
 // A-<-B*C&D*E:E*F&G->-E:E*F&G
@@ -1001,8 +1028,8 @@ const isInverted = (symbol, token) => {
 // novert ::=  h_grouping | nested | subgroup | cartouche |  icon
 // nonest ::= subggroup | icon --- parseNested
 export const ramsesIII = (string) => {
-	//console.log(string);
-	const result = parseExpr(tokenizer(string));
+	
+	const result = parseExpr(tokenizer(string),null,RamsesState);
 	if(result == false) return [];
 	return result;
 };
