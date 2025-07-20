@@ -27,6 +27,7 @@ const d_sep_i = "#b";				// starts a whole dashed area as in "A-#b-B-C#e-D" will
 const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
 const red_i = "$r";					// starts red text as in "A-$r-B-C-$b-D-E" will paint red signs B and C
 const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
+const red = "\\red"				// marks the sign that goes with as red as in "A-B\red-C" will paint only the sign B red
 /*
 // DASH MODIFIERS:
    const dashed_c = "//";				// adds a full squared dash as in "A-//-B"
@@ -44,7 +45,7 @@ const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint
 										// areas 1, 2, 3 and 4 go clockwise starting from top-left corner
 										// You can hash a group of icons within a "(A-B)#124"
 *  const ignored = "{sign}\i"			// marks the sign that goes with as ignored as in "A-B\i-C" will mark as ignored sign B
-*  const red = "{sign}\red"				// marks the sign that goes with as red as in "A-B\red-C" will paint only the sign B red
+
 *  const highlighted = "{sign}!"		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
 *  const sic = "{sign}§"				// marks the sign as "sic"
 *  const question = "{sign}~"			// marks the sign as "question"
@@ -75,7 +76,7 @@ const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|#b|#e|\$r|\$b|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|#b|#e|\$r|\$b|\\red|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -163,7 +164,7 @@ const addDashedToSymbol = (symbol,tokens) => {
 	
 	if (typeof symbol.result != 'object') {
 		symbol.result = {
-			icons:[symbol.result],
+			icon:symbol.result,
 			dashed:dashed.dashed
 		}
 	}
@@ -407,7 +408,18 @@ export const parseExpr = (tokens, prev=undefined) => {
 	}
 	if(result === false) return false;
 
-	const remaining = tokens.slice(result.consumed);
+	let remaining = tokens.slice(result.consumed);
+
+	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
+
+	if (remaining[0] == red) {
+		if (typeof result.icons[0] == 'string') {
+			result.icons[0] = {icon:result.icons[0]};
+		}
+		result.icons[0].red = true;
+		result.consumed++;
+		remaining = remaining.slice(1);
+	}
 
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
 
@@ -418,11 +430,6 @@ export const parseExpr = (tokens, prev=undefined) => {
 	if (Array.isArray(remaining_res)) {
 		return [...result.icons,...remaining_res.slice(1)];
 	}
-	// if (remaining_res?.icons[0]?.icons == undefined) {
-	// 	return [];
-	// }
-
-	//remaining_res.icons[0].icons[0] = result.icons.length == 1 ? result.icons[0] : [...result.icons];
 	return Array.isArray(remaining_res.icons) ? remaining_res.icons:[remaining_res.icons];
 };
 
@@ -964,8 +971,6 @@ export const consumeDashedIcon = (tokens) => {
 			result.result.dynamic = has_options.dynamic;
 		}
 	}
-
-	
 
 	// console.log('Before dash',result);
 	const dash_added = addDashedToSymbol(result,tokens.slice(result.consumed));

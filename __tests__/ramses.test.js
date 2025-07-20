@@ -1117,7 +1117,7 @@ describe('RamsesIII',()=>{
             expect(parseHorizontal(["A","#1"])).toStrictEqual({
                 consumed:2,
                 icons:[{
-                    icons:['A'],
+                    icon:'A',
                     dashed:'1'
                 }]
             });
@@ -1126,10 +1126,10 @@ describe('RamsesIII',()=>{
         it('checks multiple A#1-B#23',()=>{
             expect(ramsesIII("A#1-B#23")).toStrictEqual(
                 [{
-                    icons:['A'],
+                    icon:'A',
                     dashed:'1'
                 },
-                {icons:['B'],dashed:'23'}]
+                {icon:'B',dashed:'23'}]
             );
         })
 
@@ -1159,13 +1159,54 @@ describe('RamsesIII',()=>{
 
         it('dashes inside of cartouche',()=>{
             expect(ramsesIII("<S-A#1-B->")).toStrictEqual(
-                [{icons:[{icons:['A'],dashed:'1'},'B'],type:'serekh'}]
+                [{icons:[{icon:'A',dashed:'1'},'B'],type:'serekh'}]
             );
         })
 
         it('doble dashed in expression',()=>{
             expect(ramsesIII("A-#b-B-C-#e-D-#b-E-F-#e")).toStrictEqual(
                 ['A',{icons:['B','C'],dashed:'1234'},'D',{icons:['E','F'],dashed:'1234'}]
+            );
+        })
+
+        it('icon inverted, dashed and colored',()=>{
+            expect(ramsesIII("D36\\{w:3,h:3}#1234")).toStrictEqual(
+                [
+                    {
+                        "inverted": true,
+                        "icon": "D36",
+                        "dashed": "1234",
+                        "dynamic": {
+                            "w": 3,
+                            "h": 3
+                        }
+                    }
+                ]   
+            );
+        })
+        
+        it('icon dashed D36#34',()=>{
+            expect(ramsesIII("D36#34")).toStrictEqual(
+                [
+                    {
+                        "icon": "D36",
+                        "dashed": "34",
+                        
+                    }
+                ]   
+            );
+        })
+
+        it('icon dashed D36#34',()=>{
+            expect(ramsesIII("D36\\#34")).toStrictEqual(
+                [
+                    {
+                        "icon": "D36",
+                        "dashed": "34",
+                        "inverted": true
+                        
+                    }
+                ]   
             );
         })
 
@@ -1511,6 +1552,35 @@ describe('RamsesIII',()=>{
             expect(ramsesIII("$r-A&B")).toStrictEqual([
                 {
                     type:'&',
+                    icons:['A','B'],
+                    red:true
+                }
+            ])
+        })
+
+        it('Changes to color red of an expression using red',()=>{
+            expect(ramsesIII("A&B\\red")).toStrictEqual([
+                {
+                    type:'&',
+                    icons:['A','B'],
+                    red:true
+                }
+            ])
+        })
+
+        it('Changes to color to icon using red',()=>{
+            expect(ramsesIII("B\\red")).toStrictEqual([
+                {
+                    icon:'B',
+                    red:true
+                }
+            ])
+        })
+
+         it('Changes to color red of an expression using red',()=>{
+            expect(ramsesIII("A:B\\red")).toStrictEqual([
+                {
+                    type:':',
                     icons:['A','B'],
                     red:true
                 }
