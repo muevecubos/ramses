@@ -1577,13 +1577,22 @@ describe('RamsesIII',()=>{
             ])
         })
 
-         it('Changes to color red of an expression using red',()=>{
+        it('Changes to color red of an expression using red',()=>{
             expect(ramsesIII("A:B\\red")).toStrictEqual([
                 {
                     type:':',
                     icons:['A','B'],
                     red:true
                 }
+            ])
+        })
+        it('Horizontal using red',()=>{
+            expect(ramsesIII("A1-B1\\red")).toStrictEqual([
+                "A1",
+                {
+                    "icon": "B1",
+                    "red": true
+                },
             ])
         })
     })

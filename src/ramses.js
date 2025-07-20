@@ -413,10 +413,11 @@ export const parseExpr = (tokens, prev=undefined) => {
 	if(remaining.length == 0) return Array.isArray(result.icons) ? result.icons:[result.icons];
 
 	if (remaining[0] == red) {
-		if (typeof result.icons[0] == 'string') {
-			result.icons[0] = {icon:result.icons[0]};
+		const last_index = result.icons.length-1;
+		if (typeof result.icons[last_index] == 'string') {
+			result.icons[last_index] = {icon:result.icons[last_index]};
 		}
-		result.icons[0].red = true;
+		result.icons[last_index].red = true;
 		result.consumed++;
 		remaining = remaining.slice(1);
 	}
