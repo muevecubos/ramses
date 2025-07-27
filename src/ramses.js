@@ -424,7 +424,7 @@ export const parseExpr = (tokens, prev=undefined) => {
 		if (typeof result.icons[last_index] == 'string') {
 			result.icons[last_index] = {icon:result.icons[last_index]};
 		}
-		result.icons[last_index].highlight = true;
+		result.icons[last_index].highlighted = true;
 		result.consumed++;
 		remaining = remaining.slice(1);
 	}

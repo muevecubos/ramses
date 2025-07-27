@@ -1584,7 +1584,7 @@ describe('RamsesIII',()=>{
              expect(ramsesIII("A-B!-C")).toStrictEqual(
                 [
                     'A',
-                    { icon: 'B' , highlight: true },
+                    { icon: 'B' , highlighted: true },
                     'C'
                 ]
             )
@@ -1595,7 +1595,7 @@ describe('RamsesIII',()=>{
                 {
                     type:'&',
                     icons:['A','B'],
-                    highlight:true
+                    highlighted:true
                 }
             ])
         })
@@ -1604,7 +1604,7 @@ describe('RamsesIII',()=>{
                 {
                     type:':',
                     icons:['A','B'],
-                    highlight:true
+                    highlighted:true
                 }
             ])
         })
