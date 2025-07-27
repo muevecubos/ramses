@@ -28,6 +28,7 @@ const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will d
 const red_i = "$r";					// starts red text as in "A-$r-B-C-$b-D-E" will paint red signs B and C
 const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
 const red = "\\red"				// marks the sign that goes with as red as in "A-B\red-C" will paint only the sign B red
+const highlighted = "!"		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
 /*
 // DASH MODIFIERS:
    const dashed_c = "//";				// adds a full squared dash as in "A-//-B"
@@ -46,7 +47,7 @@ const red = "\\red"				// marks the sign that goes with as red as in "A-B\red-C"
 										// You can hash a group of icons within a "(A-B)#124"
 *  const ignored = "{sign}\i"			// marks the sign that goes with as ignored as in "A-B\i-C" will mark as ignored sign B
 
-*  const highlighted = "{sign}!"		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
+
 *  const sic = "{sign}§"				// marks the sign as "sic"
 *  const question = "{sign}~"			// marks the sign as "question"
 *  const determinative = "{sign}@"		// marks the sign that goes with as highlighted as in "A-B-C@" will paint only the sign C as a determinative
@@ -76,7 +77,7 @@ const red = "\\red"				// marks the sign that goes with as red as in "A-B\red-C"
 */
 
 export const tokenizer = (string) => {
-	const tokenizeRegex = /&&&|#b|#e|\$r|\$b|\\red|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~\!|\@]?|\S/gi;
+	const tokenizeRegex = /&&&|#b|#e|\$r|\$b|\\red|!|#[1234]+|[A-Za-z_\/\[\]0-9][A-Za-z_\/\[\]0-9]*[\§\%\~|\@]?|\S/gi;
 	const tokens = string.matchAll(tokenizeRegex);
 	let elements = [];
 	for(const token of tokens) {
@@ -400,10 +401,6 @@ export const parseExpr = (tokens, prev=undefined) => {
 	}
 
 	if (result === false) {
-		result = parseColoredExpression(tokens);
-	}
-	
-	if (result === false) {
 		result = parseHorizontal(tokens);
 	}
 	if(result === false) return false;
@@ -418,6 +415,16 @@ export const parseExpr = (tokens, prev=undefined) => {
 			result.icons[last_index] = {icon:result.icons[last_index]};
 		}
 		result.icons[last_index].red = true;
+		result.consumed++;
+		remaining = remaining.slice(1);
+	}
+
+	if (remaining[0] == highlighted) {
+		const last_index = result.icons.length-1;
+		if (typeof result.icons[last_index] == 'string') {
+			result.icons[last_index] = {icon:result.icons[last_index]};
+		}
+		result.icons[last_index].highlight = true;
 		result.consumed++;
 		remaining = remaining.slice(1);
 	}
@@ -793,15 +800,20 @@ export const parseCartouche = (tokens) => {
 
 	//Get tokens until we find >
 	let sub_tokens = [];
+	let parity = 0;
 	for(var i = start; i < tokens.length; i++) {
+		if(tokens[i] == c_sep_i) parity++;
 		if(tokens[i] == c_sep_e) {
-			if(tokens[i - 1] != h_sep) return false;
-			consumed++;
-			break;
+			//if(tokens[i - 1] != h_sep) return false;
+			if(parity == 0) {
+				consumed++;
+				break;
+			} else {
+				parity--;
+			}
 		}
 		sub_tokens.push(tokens[i]);
 	}
-
 	if(sub_tokens.length == 0) return false;
 
 	if(sub_tokens[0] == h_sep && sub_tokens[sub_tokens.length - 1] == h_sep) {

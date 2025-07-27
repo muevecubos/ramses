@@ -854,6 +854,80 @@ describe('RamsesIII',()=>{
         ])
     })
 
+    describe('Cartouche Parsing',()=>{ 
+
+        it('Nested cartouche',()=>{
+            const result = ramsesIII('<-A-<-D-E->-G->');
+            expect (result).toStrictEqual([
+                {
+                    type:'cartouche',
+                    icons:[
+                        'A',
+                        {
+                            type:'cartouche',
+                            icons:[
+                                'D',
+                                'E',
+                            ]
+                        },
+                        'G'
+                    ]
+                }
+            ])
+        })
+
+        it('Nested cartouche parse cartouche',()=>{
+            expect(parseCartouche(['<','-','A','-','<','-','D','-','E','-','>','-','G','-','>'])).toStrictEqual(
+                {consumed:15,result:{
+                    type:'cartouche',
+                    icons:[
+                        'A',
+                        {
+                            type:'cartouche',
+                            icons:[
+                                'D',
+                                'E',
+                            ]
+                        },
+                        'G'
+                    ]
+                }
+            })
+        })
+
+        it('Nested cartouche complex',()=>{
+            const result = ramsesIII('<-A-B-C:C-<-D-E:F->-G->');
+            expect (result).toStrictEqual([
+                {
+                    type:'cartouche',
+                    icons:[
+                        'A',
+                        'B',
+                        {
+                            type:':',
+                            icons:[
+                                'C','C'
+                            ]
+                        },
+                        {
+                            type:'cartouche',
+                            icons:[
+                                'D',
+                                {
+                                    type:':',
+                                    icons:[
+                                        'E','F'
+                                    ]
+                                }
+                            ]
+                        },
+                        'G'
+                    ]
+                }
+            ])
+        })
+    })
+
     describe('Inverted parsing',()=>{
 
         it ('Expression with inverted',()=>{
@@ -1504,6 +1578,37 @@ describe('RamsesIII',()=>{
 
         
     });
+
+    describe('Highligting',()=>{
+        it('highlights a single icon',()=>{
+             expect(ramsesIII("A-B!-C")).toStrictEqual(
+                [
+                    'A',
+                    { icon: 'B' , highlight: true },
+                    'C'
+                ]
+            )
+        })
+
+        it('highlights an & expression',()=>{
+            expect(ramsesIII("A&B!")).toStrictEqual([
+                {
+                    type:'&',
+                    icons:['A','B'],
+                    highlight:true
+                }
+            ])
+        })
+        it('highlights an : expression',()=>{
+            expect(ramsesIII("A:B!")).toStrictEqual([
+                {
+                    type:':',
+                    icons:['A','B'],
+                    highlight:true
+                }
+            ])
+        })
+    })
 
     describe('Color changing',()=>{
         
