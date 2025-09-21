@@ -524,6 +524,25 @@ describe('RamsesIII',()=>{
                 icons:['A', { type:"&", icons:['B', 'C'] }],
                 }     
         ])});
+        
+        
+        it('parses current M17*(Q3:X1)*Q1',()=>{
+            expect(ramsesIII('M17*(Q3:X1)*Q1')).toStrictEqual([
+                {
+                    "type": "*",
+                    "icons": [
+                        "M17",
+                        {
+                            "type": ":",
+                            "icons": [
+                                "Q3",
+                                "X1"
+                            ]
+                        },
+                        "Q1"
+                    ]
+                }
+            ])});
     })
 
 

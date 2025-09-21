@@ -150,6 +150,8 @@ export const parseHorizontalSep = (tokens) => {
 		// console.log('GroupableIteration',symb);
 		result.icons.push(symb.result);
 		consumed+= symb.consumed;
+		//Consumed -1 cause of for loop
+		i+= symb.consumed-1;
 		if(!symb) return is_valid ? {consumed,result} : false;
 		is_valid = result.icons.length>1;
 	}
