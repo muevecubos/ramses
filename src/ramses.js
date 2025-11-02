@@ -930,10 +930,21 @@ const consumeJsonAlike = (tokens) => {
 	if(tokens[0] != '{') return false;
 	let consumed = 1;
 	let is_valid = false;
+	let depth = 1;
 
 	for (var i = 1; i < tokens.length; i++) {
+		if(tokens[i] == '{') {
+			consumed++;
+			depth++;
+			continue;
+		}
+
 		if(tokens[i] == '}') {
 			consumed++;
+			if (depth > 1) {
+				depth--;
+				continue;
+			}
 			is_valid = true;
 			break;
 		}

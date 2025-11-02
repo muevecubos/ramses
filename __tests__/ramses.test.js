@@ -1595,6 +1595,24 @@ describe('RamsesIII',()=>{
             );
         })
 
+        it('Expression with nested json ',()=>{
+            expect(ramsesIII("A{h:12,nested:{hola:15}}")).toStrictEqual(
+                [
+                    {icon:'A',dynamic:{h:12,nested:{hola:15}}},
+                ]
+            );
+        })
+
+        it('Expression with nested 3 levels json ',()=>{
+            expect(ramsesIII("A{h:12,nested:{hola:15,third:{nest:55}}}")).toStrictEqual(
+                [
+                    {icon:'A',dynamic:{h:12,nested:{hola:15,third:{nest:55}}}},
+                ]
+            );
+        })
+
+
+
         
     });
 
