@@ -83,7 +83,7 @@ describe('RamsesIII',()=>{
 
     it ('parses A-(B-C):D-E',()=>{
         expect(ramsesIII('A-(B-C):D-E')).toStrictEqual([
-            'A',{icons:[['B','C'],'D'],type:':'},'E'
+            'A',{icons:[['B','C'],'D'],type:':',raw:'(B-C):D'},'E'
         ])
     })
 
@@ -202,7 +202,7 @@ describe('RamsesIII',()=>{
                 consumed:7,
                 result:[
                     't',
-                    {type:'&',icons:['p','c']}
+                    {type:'&',icons:['p','c'],raw:'p&c'}
                 ]
             })
         })
@@ -275,7 +275,7 @@ describe('RamsesIII',()=>{
 
     it('Recognizes a nested group',()=>{
         expect(ramsesIII('A-B&C')).toStrictEqual(
-            ['A',{type:'&',icons:['B','C']}]
+            ['A',{type:'&',icons:['B','C'],raw:'B&C'}]
         )
     })
 
@@ -349,7 +349,7 @@ describe('RamsesIII',()=>{
 
     it('Recognizes nested expression t&w&(t-n:N5)',()=>{
         expect(ramsesIII('t&w&(a-n:N5)')).toStrictEqual(
-            [{icons:['t','w',['a',{icons:['n','N5'],type:':'}]],type:'&'}]
+            [{icons:['t','w',['a',{icons:['n','N5'],type:':',raw:'n:N5'}]],type:'&'}]
         )
     })
 
@@ -361,7 +361,7 @@ describe('RamsesIII',()=>{
 
     it('Recognizes a chain with vertical A-B:C',()=>{
         expect(ramsesIII('A-B:C')).toStrictEqual(
-            ['A',{type:':',icons:['B','C']}]
+            ['A',{type:':',icons:['B','C'],raw:'B:C'}]
         )
     })
 
@@ -380,13 +380,13 @@ describe('RamsesIII',()=>{
     it('parses expressioon t-p&c',()=>{
         expect(parseExpr(['t','-','p','&','c'])).toStrictEqual([
                 't',
-                {type:'&',icons:['p','c']}
+                {type:'&',icons:['p','c'],raw:'p&c'}
             ])
     })
 
     it('parses a group with vertial i-mn:n-Htp-A1',()=>{
         expect(ramsesIII('i-mn:n-Htp-A1')).toStrictEqual([
-            "i",{type:':',icons:['mn','n']},'Htp','A1'
+            "i",{type:':',icons:['mn','n'],raw:'mn:n'},'Htp','A1'
         ])
     })
 
@@ -403,7 +403,7 @@ describe('RamsesIII',()=>{
    
     it('parses a group with vertial and subgroup ra-Htp:(t-p)-A1',()=>{
         expect(ramsesIII('ra-Htp:(t-p)-A1')).toStrictEqual([
-            "ra",{type:':',icons:['Htp',['t','p']]},'A1'
+            "ra",{type:':',icons:['Htp',['t','p']],raw:'Htp:(t-p)'},'A1'
         ])
     })
 
@@ -426,6 +426,7 @@ describe('RamsesIII',()=>{
                     icons:['A',
                         {
                             type:':',
+                            raw:'B:C',
                             icons:['B','C']
                         }
                 ]}
@@ -457,7 +458,7 @@ describe('RamsesIII',()=>{
         it('parses A-B*C',()=>{
             expect(ramsesIII('A-B*C')).toStrictEqual([
                 'A',
-                {type:'*',icons:['B','C']}
+                {type:'*',icons:['B','C'],raw:'B*C'}
             ])
         })
        
@@ -465,7 +466,7 @@ describe('RamsesIII',()=>{
         it('parses M17-Y5D:N35:N5*Z1',()=>{
             expect(ramsesIII('M17-Y5D:N35:N5*Z1')).toStrictEqual([
                 'M17',
-                {type:':',icons:['Y5D','N35',{type:'*',icons:['N5','Z1']}]}
+                {type:':',icons:['Y5D','N35',{type:'*',icons:['N5','Z1']}],raw:"Y5D:N35:N5*Z1"}
             ])
         })
         
@@ -495,14 +496,14 @@ describe('RamsesIII',()=>{
         it('parses A-B*C*D',()=>{
             expect(ramsesIII('A-B*C*D')).toStrictEqual([
                 'A',
-                {type:'*',icons:['B','C','D']}
+                {type:'*',icons:['B','C','D'],raw:'B*C*D'}
             ])
         })
 
         it('parses A-B*C-D',()=>{
             expect(ramsesIII('A-B*C-D')).toStrictEqual([
                 'A',
-                {type:'*',icons:['B','C']},
+                {type:'*',icons:['B','C'],raw:'B*C'},
                 'D'
             ])
         })
@@ -549,7 +550,7 @@ describe('RamsesIII',()=>{
     it('parses t-G39&ra',()=>{
         expect(ramsesIII('t-G39&ra')).toStrictEqual([
             't',
-            {type:'&',icons:['G39','ra']}
+            {type:'&',icons:['G39','ra'],raw:'G39&ra'}
         ])
     })
 
@@ -558,7 +559,7 @@ describe('RamsesIII',()=>{
             'A',
             [
                 't',
-                {type:'&',icons:['G39','ra']}
+                {type:'&',icons:['G39','ra'],raw:'G39&ra'}
             ]
         ])
     })
@@ -568,12 +569,14 @@ describe('RamsesIII',()=>{
                 "ra",
                 {
                     type:':',
+                    raw:'mn:(t-G39&ra)',
                     icons:[
                         'mn',
                         [
                             't',
                             {
                                 type:'&',
+                                raw:'G39&ra',
                                 icons:[
                                     'G39',
                                     'ra'
@@ -634,6 +637,7 @@ describe('RamsesIII',()=>{
                         'E',
                         {
                             type:'&',
+                            raw:'F&G',
                             icons:[
                                 'F','G'
                             ]
@@ -650,20 +654,24 @@ describe('RamsesIII',()=>{
             'A',
             {
                 type:'cartouche',
+                raw:'<-B-C&D-E:(E-F&G)->',
                 icons:[
                     'B',
                     {
                         type:'&',
+                        raw:'C&D',
                         icons:['C','D']
                     },
                     {
                         type:":",
+                        raw:'E:(E-F&G)',
                         icons:[
                             'E',
                             [
                                 'E',
                                 {
                                     type:'&',
+                                    raw:'F&G',
                                     icons:[
                                         'F','G'
                                     ]
@@ -671,16 +679,18 @@ describe('RamsesIII',()=>{
                             ]
                         ]
                     }
-                ]
+                ],
             },
             {
                 type:":",
+                raw:'E:(E-F&G)',
                 icons:[
                     "E",
                     [
                         'E',
                         {
                             type:'&',
+                            raw:'F&G',
                             icons:['F','G']
                         }
                     ]
@@ -695,20 +705,24 @@ describe('RamsesIII',()=>{
             'A',
             {
                 type:'cartouche',
+                raw:'<-B-C&D-E:(E-F&G)->',
                 icons:[
                     'B',
                     {
                         type:'&',
+                        raw:'C&D',
                         icons:['C','D']
                     },
                     {
                         type:":",
+                        raw:'E:(E-F&G)',
                         icons:[
                             'E',
                             [
                                 'E',
                                 {
                                     type:'&',
+                                    raw:'F&G',
                                     icons:['F','G']
                                 }
                             ]
@@ -720,6 +734,7 @@ describe('RamsesIII',()=>{
             },
             {
                 type:":",
+                raw:"E:E",
                 icons:[
                     "E",
                     'E',    
@@ -727,6 +742,7 @@ describe('RamsesIII',()=>{
             },
             {
                 type:'&',
+                raw:'F&G',
                 icons:['F','G']
             }
         ])
@@ -742,6 +758,7 @@ describe('RamsesIII',()=>{
             'A',
             {
                 type:':',
+                raw:'(B:(C-D))',
                 icons:[
                     'B',
                     [
@@ -814,7 +831,8 @@ describe('RamsesIII',()=>{
                         type:":",
                         icons:[
                             'C','D'
-                        ]
+                        ],
+                        raw:"C:D"
                     },
                 ] 
             ]    
@@ -831,6 +849,7 @@ describe('RamsesIII',()=>{
                     'B',
                     {
                         type:":",
+                        raw:'(C:D)',
                         icons:[
                             'C','D'
                         ]
@@ -850,6 +869,7 @@ describe('RamsesIII',()=>{
                     [
                         {
                             type:':',
+                            // raw:'(A:B)',
                             icons:['A','B']
                         },
                         'C'
@@ -884,6 +904,7 @@ describe('RamsesIII',()=>{
                         'A',
                         {
                             type:'cartouche',
+                            raw:'<-D-E->',
                             icons:[
                                 'D',
                                 'E',
@@ -903,6 +924,7 @@ describe('RamsesIII',()=>{
                         'A',
                         {
                             type:'cartouche',
+                            raw:'<-D-E->',
                             icons:[
                                 'D',
                                 'E',
@@ -924,22 +946,26 @@ describe('RamsesIII',()=>{
                         'B',
                         {
                             type:':',
+                            raw:'C:C',
                             icons:[
                                 'C','C'
                             ]
                         },
                         {
                             type:'cartouche',
+                            raw:'<-D-E:F->',
                             icons:[
                                 'D',
                                 {
                                     type:':',
+                                    raw:'E:F',
                                     icons:[
                                         'E','F'
                                     ]
                                 }
                             ]
                         },
+
                         'G'
                     ]
                 }
@@ -955,6 +981,7 @@ describe('RamsesIII',()=>{
                 'A','B',{
                     type:'h',
                     inverted:true,
+                    raw:'(C-D)\\',
                     icons:[
                         'C','D'
                     ]
@@ -1053,6 +1080,7 @@ describe('RamsesIII',()=>{
             "W19",
             {
                 "type": "*",
+                raw:"(Q3:X1)*V28",
                 "icons": [
                     {
                         "type": ":",
@@ -1077,10 +1105,12 @@ describe('RamsesIII',()=>{
             },
             {
                 type:':',
+                raw:'Aa11:X1',
                 icons:['Aa11','X1']
             },
             {
                 type:':',
+                raw:'(S29-F35):D21',
                 icons:[
                     ['S29','F35'],
                     'D21'
@@ -1101,6 +1131,7 @@ describe('RamsesIII',()=>{
               ]
             }, {
               "type":":",
+              raw:"C*D:F:G",
               "icons":[
                 {
                   "type":"*",
@@ -1122,6 +1153,7 @@ describe('RamsesIII',()=>{
             "A",
             {
               "type":":",
+              raw:"B*C:D:E",
               "icons":[
                 {
                   "type":"*",
@@ -1135,12 +1167,14 @@ describe('RamsesIII',()=>{
               ]
             }, {
               "type":":",
+              raw:"F:G",
               "icons":[
                 "F",
                 "G"
               ]
             }, {
               "type":":",
+              raw:"H:I:J",
               "icons":[
                 "H",
                 "I",
@@ -1159,7 +1193,8 @@ describe('RamsesIII',()=>{
                     "N"
                   ]
                 },
-              ]
+                ],
+                raw:"L:M*N"
             },
             "O",
             "P"
@@ -1258,7 +1293,7 @@ describe('RamsesIII',()=>{
 
         it('doble dashed in expression',()=>{
             expect(ramsesIII("A-#b-B-C-#e-D-#b-E-F-#e")).toStrictEqual(
-                ['A',{icons:['B','C'],dashed:'1234'},'D',{icons:['E','F'],dashed:'1234'}]
+                ['A',{icon:'B',dashed:'1234'},{icon:'C',dashed:'1234'},'D',{icon:'E',dashed:'1234'},{icon:'F',dashed:'1234'}]
             );
         })
 
@@ -1343,11 +1378,11 @@ describe('RamsesIII',()=>{
                     consumed:7,
                     icons: [
                         {
-                            icons:["A"],
+                            icon:"A",
                             dashed:'1234'
                         },
                         {
-                            icons:["B"],
+                            icon:"B",
                             dashed:'1234'
                         }
                     ]
@@ -1358,8 +1393,8 @@ describe('RamsesIII',()=>{
         it ('parses partial dashed expr #b-A-B-#e-C',()=>{
             expect(parseExpr(["#b","-","A","-","B","-","#e",'-','C'])).toStrictEqual(
                 [
-                    {icons:['A'],dashed:'1234'},
-                    {icons:['B'],dashed:'1234'},
+                    {icon:'A',dashed:'1234'},
+                    {icon:'B',dashed:'1234'},
                     'C'
                 ]
             );
@@ -1369,9 +1404,8 @@ describe('RamsesIII',()=>{
             expect(parseExpr(["#b","-","A","&","B","-","#e"])).toStrictEqual(
                 [
                     {
-                        icons:['A','B'],
+                        icons:[{icon:'A',dashed:'1234'},{icon:'B',dashed:'1234'}],
                         type:'&',    
-                        dashed:'1234'
                     }
                 ]
             );
@@ -1381,11 +1415,10 @@ describe('RamsesIII',()=>{
             expect(parseExpr(["#b","-","A","&","B","-","#e",'-','C'])).toStrictEqual(
                 [{
                     icons: [
-                        'A',
-                        'B'
+                        {icon:'A',dashed:'1234'},
+                        {icon:'B',dashed:'1234'},
                     ],
                     type:'&',
-                    dashed:'1234',
                 },
                 'C'
                 ]
@@ -1402,11 +1435,10 @@ describe('RamsesIII',()=>{
             expect(ramsesIII('#b-A&B-#e-C')).toStrictEqual(
                 [{
                     icons:[
-                        'A',
-                        'B'
+                        {icon:'A',dashed:'1234'},
+                        {icon:'B',dashed:'1234'},
                     ],
                     type:'&',
-                    dashed:'1234'
                 },  
                 'C'
                 ]
@@ -1415,7 +1447,7 @@ describe('RamsesIII',()=>{
 
         it('dashed expression inside of cartouche',()=>{
             expect(ramsesIII("<S-A-#b-B-C-#e->")).toStrictEqual(
-                [{icons:['A',{icons:['B','C'],dashed:'1234'}],type:'serekh'}],//[{icons:['B'],type:'serekh'}]
+                [{icons:['A',{icon:'B',dashed:'1234'},{icon:'C',dashed:'1234'}],type:'serekh'}],
             );
         })
         
@@ -1423,30 +1455,28 @@ describe('RamsesIII',()=>{
         it('complex expression A-#b-B-C:D-E:F:G-#e-A',()=>{
             expect(ramsesIII("#b-B-C:D-#e")).toStrictEqual(
                 [
-                    {icons:['B'],dashed:'1234'},
+                    {icon:'B',dashed:'1234'},
                     {
                         icons:[
-                            'C','D'
+                            {icon:'C',dashed:'1234'},{icon:'D',dashed:'1234'}
                         ],
+                        raw:'C:D',
                         type:':',
-                        dashed:'1234'
                     }
                 ]
             );
         })
-        it('complex expression #b-E23-Q3:Q3-#e',()=>{
+        it('complex expression #b-E23-Q3:Q3-#e-first',()=>{
             expect(ramsesIII("#b-E23-Q3:Q3-#e")).toStrictEqual(
                 [
-                    {
-                        icons:['E23'],
-                        dashed:'1234'
-                    },
+                    { icon: 'E23', dashed: '1234' },
                     {
                         icons:[
-                            'Q3','Q3'
+                            {icon:'Q3',dashed:'1234'},
+                            {icon:'Q3',dashed:'1234'}
                         ],
+                        raw:'Q3:Q3',
                         type:':',
-                        dashed:'1234'
                     }
                 ]
             );
@@ -1457,7 +1487,7 @@ describe('RamsesIII',()=>{
                 [
                     'A1',
                     {
-                        icons:['A1'],
+                        icon:'A1',
                         dashed:'1234'
                     },
                     'A1'
@@ -1469,18 +1499,16 @@ describe('RamsesIII',()=>{
             expect(ramsesIII("#b-E23-Q3:Q3-#e-A1")).toStrictEqual(
                 [
                     {
-                        "icons": [
-                            "E23"
-                        ],
+                        icon: "E23",
                         "dashed": "1234"
                     },
                     {
                         "type": ":",
+                        raw: "Q3:Q3",
                         "icons": [
-                            "Q3",
-                            "Q3"
+                            {icon:"Q3",dashed:"1234"},
+                            {icon:"Q3",dashed:"1234"},
                         ],
-                        "dashed": "1234"
                     },
                     'A1'
                 ]
@@ -1490,8 +1518,8 @@ describe('RamsesIII',()=>{
         it('complex expression #b-S29-D21:D36-#e-D28-Z1',()=>{
             expect(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")).toStrictEqual(
                 [
-                    {icons:["S29"],dashed:"1234"},
-                    {icons:["D21","D36"],type:":",dashed:"1234"},
+                    {icon:"S29",dashed:"1234"},
+                    {icons:[{icon:"D21",dashed:"1234"},{icon:"D36",dashed:"1234"}],type:":","raw": "D21:D36"},
                     'D28',
                     'Z1'
                 ]
