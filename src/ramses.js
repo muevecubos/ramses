@@ -227,6 +227,12 @@ export const parseHorizontal = (tokens) => {
 const addDashedRecursive = (expr,dashed) => {
 
 	if (Array.isArray(expr)) {
+
+		if (expr.length == 1) {
+			expr[0].dashed = dashed;
+			return expr;
+		}
+
 		return expr.map(symbol => {
 			if (typeof symbol == 'string') return {icon:symbol,dashed:dashed}
 			return addDashedRecursive(symbol,dashed)
@@ -326,17 +332,16 @@ export const parseDashedHorizontal = (tokens) => {
 
 	//Add dashed to the inner expression
 	if (expr.icons.length == 1) {
-			return {
-				consumed:expr.consumed+4,
-				icons:expr.icons.map(icon=>{
-					if (typeof icon =='string') return {icon:icon,dashed:"1234"}
-					return {
-						...icon,
-						dashed:'1234'
-					}
-				})
-			};
-		
+		return {
+			consumed:expr.consumed+4,
+			icons:expr.icons.map(icon=>{
+				if (typeof icon =='string') return {icon:icon,dashed:"1234"}
+				return {
+					...icon,
+					dashed:'1234'
+				}
+			})
+		};
 	}
 
 	return {

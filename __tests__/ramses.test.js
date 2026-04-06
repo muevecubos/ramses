@@ -1337,6 +1337,67 @@ describe('RamsesIII',()=>{
                 ]   
             );
         })
+        
+        it('Dashed vertica novegl I10&D46#1234',()=>{
+            expect(ramsesIII("I10&D46#1234")).toStrictEqual(
+                [
+                    {
+                        "type": "&",
+                        "icons": [
+                            "I10",
+                            "D46",
+                        ],
+                        "dashed": "1234"
+                    }
+
+                ]   
+            );
+        })
+
+        it('Dashed vertical ended #b-I10&D46-#e',()=>{
+            expect(ramsesIII("#b-I10&D46-#e")).toStrictEqual(
+                [
+                    {
+                        "type": "&",
+                        "icons": [
+                            "I10",
+                            "D46",
+                        ],
+                        "dashed": "1234"
+                    }
+                ]   
+            );
+        })
+        
+        it('Dashed vertical begend23 A-#b-B&C-D:E-F-#e-G',()=>{
+            expect(ramsesIII("A-#b-B&C-D:E-F-#e-G")).toStrictEqual(
+                [
+                    "A",
+                    {
+                        "type": "&",
+                        "icons": [
+                            "B",
+                            "C",
+                        ],
+                        "dashed": "1234"
+                    },
+                    {
+                        "type": ":",
+                        raw: "D:E",
+                        "icons": [
+                            "D",
+                            "E",
+                        ],
+                        "dashed": "1234"
+                    },
+                    {
+                        "icon": "F",
+                        "dashed": "1234"
+                    },
+                    "G"
+                ]   
+            );
+        })
 
     
     });
@@ -1404,8 +1465,12 @@ describe('RamsesIII',()=>{
             expect(parseExpr(["#b","-","A","&","B","-","#e"])).toStrictEqual(
                 [
                     {
-                        icons:[{icon:'A',dashed:'1234'},{icon:'B',dashed:'1234'}],
-                        type:'&',    
+                        icons:[
+                            'A',
+                            'B'
+                        ],
+                        type:'&',  
+                        dashed:'1234'  
                     }
                 ]
             );
@@ -1415,10 +1480,11 @@ describe('RamsesIII',()=>{
             expect(parseExpr(["#b","-","A","&","B","-","#e",'-','C'])).toStrictEqual(
                 [{
                     icons: [
-                        {icon:'A',dashed:'1234'},
-                        {icon:'B',dashed:'1234'},
+                        'A',
+                        'B'
                     ],
                     type:'&',
+                    dashed:'1234'
                 },
                 'C'
                 ]
@@ -1435,10 +1501,11 @@ describe('RamsesIII',()=>{
             expect(ramsesIII('#b-A&B-#e-C')).toStrictEqual(
                 [{
                     icons:[
-                        {icon:'A',dashed:'1234'},
-                        {icon:'B',dashed:'1234'},
+                        'A',
+                        'B'
                     ],
                     type:'&',
+                    dashed:'1234'
                 },  
                 'C'
                 ]
@@ -1516,6 +1583,7 @@ describe('RamsesIII',()=>{
         })
 
         it('complex expression #b-S29-D21:D36-#e-D28-Z1',()=>{
+            console.log(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")[1]);
             expect(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")).toStrictEqual(
                 [
                     {icon:"S29",dashed:"1234"},
