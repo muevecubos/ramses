@@ -83,7 +83,19 @@ describe('RamsesIII',()=>{
 
     it ('parses A-(B-C):D-E',()=>{
         expect(ramsesIII('A-(B-C):D-E')).toStrictEqual([
-            'A',{icons:[['B','C'],'D'],type:':',raw:'(B-C):D'},'E'
+            'A',
+            {
+                icons:[
+                    {
+                        icons:['B','C'],
+                        type:'*'
+                    },
+                    'D'
+                ],
+                type:':',
+                raw:'(B-C):D'
+            },
+            'E'
         ])
     })
 
@@ -115,7 +127,7 @@ describe('RamsesIII',()=>{
 
         it('Parses vertical allowing subgroups (A-B)&C',()=>{
             expect(parseNested(['(','A','-','B',')','&','C'])).toStrictEqual(
-                {consumed:7,result:{icons:[['A','B'],'C'],type:'&'}}
+                {consumed:7,result:{icons:[{icons:['A','B'],type:'*'},'C'],type:'&'}}
             )
         })
 
@@ -186,24 +198,30 @@ describe('RamsesIII',()=>{
     describe('ParseSubGroup',()=>{
         it ('parse group identifies a simple group (t-p)',()=>{
             expect(parseSubGroup(['(','t','-','p',')'])).toStrictEqual(
-                {consumed:5,result:[
-                "t","p"
-            ]})
+                {consumed:5,
+                    result:{
+                        icons:[
+                            "t","p"
+                        ],
+                        type:'*'
+                    }
+                }
+            )
         })
     
         it ('parse group identifies a tripe group (t-z-p)',()=>{
             expect(parseSubGroup(['(','t','-','z','-','p',')'])).toStrictEqual(
-                {consumed:7,result:["t","z","p"]}
+                {consumed:7,result:{icons:["t","z","p"],type:'*'}}
             )
         })
 
         it('parses a group (t-p&c)',()=>{
             expect(parseSubGroup(['(','t','-','p','&','c',')'])).toStrictEqual({
                 consumed:7,
-                result:[
+                result:{icons:[
                     't',
                     {type:'&',icons:['p','c'],raw:'p&c'}
-                ]
+                ],type:'*'}
             })
         })
 
@@ -216,7 +234,7 @@ describe('RamsesIII',()=>{
                         icons:[
                             "t","p"
                         ],
-                        type:'h'
+                        type:'*'
                     }
                 })
         })
@@ -309,7 +327,19 @@ describe('RamsesIII',()=>{
     
     it('Recognizes multiple verticals',()=>{
         expect(ramsesIII('(A-B):C:D')).toStrictEqual(
-            [{type:':',icons:[['A','B'],'C','D']}]
+            [
+                {
+                    type:':',
+                    icons:[
+                        {
+                            icons:['A','B'],
+                            type:'*'
+                        },
+                        'C',
+                        'D'
+                    ]
+                }
+            ]
         )
     })
 
@@ -335,7 +365,7 @@ describe('RamsesIII',()=>{
     
         it('Recognizes incomplete syntaxis missing )',()=>{
             expect(ramsesIII('(A-B')).toStrictEqual(
-                ['A','B']
+                [{icons:['A','B'],type:'*'}]
             )
         })
     })
@@ -343,13 +373,40 @@ describe('RamsesIII',()=>{
 
     it('Recognizes multiple nested with subgroup t&w&(t-a)',()=>{
         expect(ramsesIII('t&w&(a-b)')).toStrictEqual(
-            [{icons:['t','w',['a','b']],type:'&'}]
+            [
+                {
+                    icons:[
+                        't',
+                        'w',
+                        {
+                            icons:['a','b'],
+                            type:'*'
+                        }
+                    ],
+                    type:'&'
+                }
+            ]
         )
     })
 
     it('Recognizes nested expression t&w&(t-n:N5)',()=>{
         expect(ramsesIII('t&w&(a-n:N5)')).toStrictEqual(
-            [{icons:['t','w',['a',{icons:['n','N5'],type:':',raw:'n:N5'}]],type:'&'}]
+            [
+                {
+                    icons:[
+                        't',
+                        'w',
+                        {
+                            icons:[
+                                'a',
+                                {icons:['n','N5'],type:':',raw:'n:N5'}
+                            ],
+                            type:'*'
+                        }
+                    ],
+                    type:'&'
+                }
+            ]
         )
     })
 
@@ -367,13 +424,18 @@ describe('RamsesIII',()=>{
 
     it('parses a group (t-p)',()=>{
         expect(ramsesIII('(t-p)')).toStrictEqual([
-            "t","p"
+            {
+                icons:[
+                    "t","p"
+                ],
+                type:'*'
+            }
         ])
     })
 
     it('parses a group A:(B-C)',()=>{
         expect(ramsesIII('A:(B-C)')).toStrictEqual([
-            {type:':',icons:['A',['B','C']]}
+            {type:':',icons:['A',{icons:['B','C'],type:'*'}]}
         ])
     })
 
@@ -396,14 +458,14 @@ describe('RamsesIII',()=>{
                 consumed:7,
                 result:{
                     type:':',
-                    icons:['A',['B','C']]}
+                    icons:['A',{icons:['B','C'],type:'*'}]}
         })
     })
 
    
     it('parses a group with vertial and subgroup ra-Htp:(t-p)-A1',()=>{
         expect(ramsesIII('ra-Htp:(t-p)-A1')).toStrictEqual([
-            "ra",{type:':',icons:['Htp',['t','p']],raw:'Htp:(t-p)'},'A1'
+            "ra",{type:':',icons:['Htp',{icons:['t','p'],type:'*'}],raw:'Htp:(t-p)'},'A1'
         ])
     })
 
@@ -557,10 +619,14 @@ describe('RamsesIII',()=>{
     it('parses (t-G39&ra)',()=>{
         expect(ramsesIII('A-(t-G39&ra)')).toStrictEqual([
             'A',
-            [
-                't',
-                {type:'&',icons:['G39','ra'],raw:'G39&ra'}
-            ]
+            {
+                icons:[
+                    't',
+                    {type:'&',icons:['G39','ra'],raw:'G39&ra'}
+                ],
+                raw:'(t-G39&ra)',
+                type:'*'
+            }
         ])
     })
 
@@ -572,17 +638,20 @@ describe('RamsesIII',()=>{
                     raw:'mn:(t-G39&ra)',
                     icons:[
                         'mn',
-                        [
-                            't',
-                            {
-                                type:'&',
-                                raw:'G39&ra',
-                                icons:[
-                                    'G39',
-                                    'ra'
-                                ]
-                            }
-                        ]
+                        {
+                            icons:[
+                                't',
+                                {
+                                    type:'&',
+                                    raw:'G39&ra',
+                                    icons:[
+                                        'G39',
+                                        'ra'
+                                    ]
+                                }
+                            ],
+                            type:'*'
+                        }
                     ]
                 }
             ])
@@ -633,16 +702,19 @@ describe('RamsesIII',()=>{
                 type:":",
                 icons:[
                     'E',
-                    [
-                        'E',
-                        {
-                            type:'&',
-                            raw:'F&G',
-                            icons:[
-                                'F','G'
-                            ]
-                        }
-                    ]
+                    {
+                        icons:[
+                            'E',
+                            {
+                                type:'&',
+                                raw:'F&G',
+                                icons:[
+                                    'F','G'
+                                ]
+                            }
+                        ],
+                        type:'*'
+                    }
                 ]
             }
         ])
@@ -667,16 +739,19 @@ describe('RamsesIII',()=>{
                         raw:'E:(E-F&G)',
                         icons:[
                             'E',
-                            [
-                                'E',
-                                {
-                                    type:'&',
-                                    raw:'F&G',
-                                    icons:[
-                                        'F','G'
-                                    ]
-                                }
-                            ]
+                            {
+                                icons:[
+                                    'E',
+                                    {
+                                        type:'&',
+                                        raw:'F&G',
+                                        icons:[
+                                            'F','G'
+                                        ]
+                                    }
+                                ],
+                                type:'*'
+                            }
                         ]
                     }
                 ],
@@ -686,14 +761,17 @@ describe('RamsesIII',()=>{
                 raw:'E:(E-F&G)',
                 icons:[
                     "E",
-                    [
-                        'E',
-                        {
-                            type:'&',
-                            raw:'F&G',
-                            icons:['F','G']
-                        }
-                    ]
+                    {
+                        icons:[
+                            'E',
+                            {
+                                type:'&',
+                                raw:'F&G',
+                                icons:['F','G']
+                            }
+                        ],
+                        type:'*'
+                    }
                 ]
             }
         ])
@@ -718,14 +796,17 @@ describe('RamsesIII',()=>{
                         raw:'E:(E-F&G)',
                         icons:[
                             'E',
-                            [
-                                'E',
-                                {
-                                    type:'&',
-                                    raw:'F&G',
-                                    icons:['F','G']
-                                }
-                            ]
+                            {
+                                icons:[
+                                    'E',
+                                    {
+                                        type:'&',
+                                        raw:'F&G',
+                                        icons:['F','G']
+                                    }
+                                ],
+                                type:'*'
+                            }
                         ]
                     },
                     
@@ -761,9 +842,12 @@ describe('RamsesIII',()=>{
                 raw:'(B:(C-D))',
                 icons:[
                     'B',
-                    [
-                        'C','D'
-                    ]
+                    {
+                        icons:[
+                            'C','D'
+                        ],
+                        type:'*'
+                    }
                 ]
             },
 
@@ -825,16 +909,19 @@ describe('RamsesIII',()=>{
             type:':',
             icons:[
                 'A',
-                [
-                    'B',
-                    {
-                        type:":",
-                        icons:[
-                            'C','D'
-                        ],
-                        raw:"C:D"
-                    },
-                ] 
+                {
+                    icons : [
+                        'B',
+                        {
+                            type:":",
+                            icons:[
+                                'C','D'
+                            ],
+                            raw:"C:D"
+                        },
+                    ],
+                    type:'*' 
+                }
             ]    
          }])
     })
@@ -845,35 +932,39 @@ describe('RamsesIII',()=>{
             type:':',
             icons:[
                 'A',
-                [
-                    'B',
-                    {
-                        type:":",
-                        raw:'(C:D)',
-                        icons:[
-                            'C','D'
-                        ]
-                    },
-                ] 
+                {
+                    icons :[
+                        'B',
+                        {
+                            type:":",
+                            raw:'(C:D)',
+                            icons:[
+                                'C','D'
+                            ]
+                        },
+                    ],
+                    type:'*'
+                }
             ]    
          }])
     })
     
     it ('Identifies subgrup correctly ((A:B)-C):D',()=>{
         const result = ramsesIII('((A:B)-C):D');
-        //console.log(JSON.stringify(result));
         expect (result).toStrictEqual([
             {
                 type:':',
                 icons:[
-                    [
-                        {
-                            type:':',
-                            // raw:'(A:B)',
-                            icons:['A','B']
-                        },
-                        'C'
-                    ],
+                    {
+                        icons:[
+                            {
+                                type:':',
+                                icons:['A','B']
+                            },
+                            'C'
+                        ],
+                        type:'*',
+                    },
                     'D'
                 ]
             }
@@ -979,7 +1070,7 @@ describe('RamsesIII',()=>{
             const result = ramsesIII('A-B-(C-D)\\');
             expect (result).toStrictEqual([
                 'A','B',{
-                    type:'h',
+                    type:'*',
                     inverted:true,
                     raw:'(C-D)\\',
                     icons:[
@@ -1004,7 +1095,7 @@ describe('RamsesIII',()=>{
             const result = ramsesIII('(A-B)\\-C');
             expect (result).toStrictEqual([
                 {
-                    type:'h',
+                    type:'*',
                     inverted:true,
                     icons:['A','B']
                 },
@@ -1061,13 +1152,17 @@ describe('RamsesIII',()=>{
                 "type": ":",
                 "icons": [
                     "A",
-                    [
-                        {
-                            "inverted": true,
-                            "icon": "B"
-                        },
-                        "C"
-                    ]
+                    {
+                        icons:[
+                            {
+                                "inverted": true,
+                                "icon": "B"
+                            },
+                            "C"
+                        ],
+                        type:'*'
+                        
+                    }
                 ]
             }])
         })
@@ -1112,7 +1207,7 @@ describe('RamsesIII',()=>{
                 type:':',
                 raw:'(S29-F35):D21',
                 icons:[
-                    ['S29','F35'],
+                    {icons:['S29','F35'],type:'*'},
                     'D21'
                 ]
             },

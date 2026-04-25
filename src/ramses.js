@@ -789,10 +789,20 @@ export const parseSubGroup = (tokens) => {
 
 	//console.log('Sub',sub);
 	const sub_exp = parseExpr(sub);
-	//console.log('Sub result',sub_exp);
+	// console.log('Sub result',sub_exp);
+
+	//If the expression is a horizontal one convert it to *
+	let final = (Array.isArray(sub_exp) && sub_exp.length == 1) ? sub_exp[0] : sub_exp;
+	if (Array.isArray(final)) {
+		final = {
+			type: h_sep_alt,
+			icons: final,
+		};
+	}
+
 	const result = {
 		consumed,
-		result: (Array.isArray(sub_exp) && sub_exp.length == 1) ? sub_exp[0] : sub_exp ,
+		result: final ,
 	};
 
 	// console.log('Before inverted',result);
