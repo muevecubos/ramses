@@ -238,6 +238,40 @@ describe('RamsesIII',()=>{
                     }
                 })
         })
+        
+        it ('Subgroup A*(B*C)',()=>{
+            expect(ramsesIII('A*(B*C)')).toStrictEqual([
+                {
+                    "type": "*",
+                    "icons": [
+                        "A",
+                        {
+                            "type": "*",
+                            "icons": [
+                                "B",
+                                "C"
+                            ],
+                    }
+                ],
+            }])
+        })
+        
+        it ('Subgroup A*(B-C)',()=>{
+            expect(ramsesIII('A*(B-C)')).toStrictEqual([
+                {
+                    "type": "*",
+                    "icons": [
+                        "A",
+                        {
+                            "type": "*",
+                            "icons": [
+                                "B",
+                                "C"
+                            ],
+                    }
+                ],
+            }])
+        })
     })
 
     describe('ConsumeSymbol',()=>{
@@ -1678,7 +1712,6 @@ describe('RamsesIII',()=>{
         })
 
         it('complex expression #b-S29-D21:D36-#e-D28-Z1',()=>{
-            console.log(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")[1]);
             expect(ramsesIII("#b-S29-D21:D36-#e-D28-Z1")).toStrictEqual(
                 [
                     {icon:"S29",dashed:"1234"},
