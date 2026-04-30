@@ -22,13 +22,22 @@ const s_sep_e = ")";		// subgroup ending as in "A:(B-C)"
 const c_sep_i = "<";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / hwt initial as in "<H-A-B->"
 const c_sep_e = ">";		// cartouche as in "<-A-B->" / serekh as in "<S-A-B->" / hwt initial as in "<H-A-B->"
 const inverted = "\\";
+const horror_vacui = "%";
 const nested_separators = [n_sep,nn_sep];
 const d_sep_i = "#b";				// starts a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
 const d_sep_e = "#e";				// ends a whole dashed area as in "A-#b-B-C#e-D" will dash signs B and C
 const red_i = "$r";					// starts red text as in "A-$r-B-C-$b-D-E" will paint red signs B and C
 const black_i = "$b";				// starts black text as in "A-$r-B-C-$b-D-E" will paint black signs A (as usual) and D and E as well
 const red = "\\red"				// marks the sign that goes with as red as in "A-B\red-C" will paint only the sign B red
-const highlighted = "!"		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
+const highlighted = "!";		// marks the sign that goes with as highlighted as in "A-B!-C" will paint only the sign B highlighted
+
+const modifiers = [
+	{modifier:'%', param:{horror_vacui:false}},
+	{modifier:'~',param:{doubt:true}},
+	{modifier:'§',param:{sic:true}},
+	{modifier:'@',param:{determinative:true}},
+];
+
 /*
 // DASH MODIFIERS:
    const dashed_c = "//";				// adds a full squared dash as in "A-//-B"
@@ -963,6 +972,13 @@ export const consumeIcon = (tokens) => {
 		}
 	}
 
+	const has_modifiers = parseSymbolModifiers(result.result, tokens.slice(result.consumed));
+	if (has_modifiers !== false) {
+		result.result = has_modifiers[0];
+		result.consumed += has_modifiers[1];
+		found = true;
+	}
+
 	if (found) return result;
 	
 	return false;
@@ -1072,6 +1088,52 @@ const isInverted = (symbol, token) => {
 
 	return {...symbol,inverted:true}
 }
+
+/**
+ * Based on a symbol checks if it has one or more modifiers no matter the order
+ * the function calls itself recursively until no more modifers are found
+ */
+export const parseSymbolModifiers = (symbol,tokens,pending=modifiers,consumed=0) => {
+	//console.log(symbol,tokens,pending,consumed);
+	let mod_found = false;
+	for (var mod in pending) {
+		const modifier = pending[mod];
+		if (tokens[0] != modifier.modifier) continue;
+
+		if (typeof symbol != 'object'){
+			symbol = {
+				icon:symbol,
+				...modifier.param
+			}
+		}
+		else {
+			symbol = {
+				...symbol,
+				...modifier.param
+			}
+		}
+
+		const remain_pending = pending.filter(m => m.modifier != modifier.modifier);
+		if (remain_pending.length == 0) {
+			return [symbol,consumed+1];
+		}
+
+		const remain_tokens = tokens.slice(1);
+		if (remain_tokens.length == 0) {
+			return [symbol,consumed+1];
+		}
+
+		//There are more modifiers to be found
+		return parseSymbolModifiers(symbol,remain_tokens,remain_pending,consumed+1);
+
+	}
+
+	if (consumed > 0) return [symbol,consumed];
+
+	//No modifier at all
+	return false
+}
+
 
 const RamsesState = {
 	current_color:'black'

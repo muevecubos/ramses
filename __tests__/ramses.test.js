@@ -1,4 +1,4 @@
-import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed, parseDashedExpr, consumeDashedIcon} from '../src/ramses';
+import ramses,{isIcon, parseCartouche, parseNested, parseSubGroup,parseVertical, ramsesII,ramsesIII,parseExpr, parseSymbol, tokenizer, consumeIcon, parseHorizontal, parseHorizontalSep, parseHGroup, parseDashed, parseDashedExpr, consumeDashedIcon, parseSymbolModifiers} from '../src/ramses';
 
 describe('RamsesIII',()=>{
 
@@ -278,6 +278,12 @@ describe('RamsesIII',()=>{
         it ('Returns a simple inverted',()=>{
             expect (consumeIcon(['A','\\'])).toStrictEqual(
                 {consumed:2,result:{icon:'A',inverted:true}}
+            )
+        })
+
+        it ('Returns a horror_vacui', ()=>{
+             expect (consumeIcon(['A','%'])).toStrictEqual(
+                {consumed:2,result:{icon:'A',horror_vacui:false}}
             )
         })
 
@@ -1962,5 +1968,51 @@ describe('RamsesIII',()=>{
             ])
         })
     })
+
+    describe('Symbol modifiers',()=>{
+
+        const modifiers = [
+            {modifier:'%', param:{horror_vacui:false}},
+            {modifier:'~',param:{doubt:true}},
+            {modifier:'§',param:{sic:true}},
+            {modifier:'@',param:{determinative:true}}
+        ];
+
+        it('Parse horror vacui',()=>{
+            expect(parseSymbolModifiers('A',['%'],[{modifier:'%',param:{horror_vacui:false}}])).toStrictEqual(
+                [{icon:'A',horror_vacui:false},1]
+            )
+        })
+
+        it('Parse doubt',()=>{
+            expect(parseSymbolModifiers('A',['~'],[{modifier:'~',param:{doubt:true}}])).toStrictEqual(
+                [{icon:'A',doubt:true},1]
+            )
+        })
+       
+        it('Parse determinative',()=>{
+            expect(parseSymbolModifiers('A',['@'],[ {modifier:'@',param:{determinative:true}}])).toStrictEqual(
+                [{icon:'A',determinative:true},1]
+            )
+        })
+        
+        it('Parse sic',()=>{
+            expect(parseSymbolModifiers('A',['§'],[ {modifier:'§',param:{sic:true}}])).toStrictEqual(
+                [{icon:'A',sic:true},1]
+            )
+        })
+
+        it('Parse multiple modifiers',()=>{
+            expect(parseSymbolModifiers('A',['%','§'],modifiers)).toStrictEqual(
+                [{icon:'A',sic:true,horror_vacui:false},2]
+            )
+        })
+
+        it('No modifiers',()=>{
+            expect(parseSymbolModifiers('A',['B'],modifiers)).toStrictEqual(
+                false
+            )
+        })
+    });
 })
 
